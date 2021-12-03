@@ -1,7 +1,5 @@
 package bgu.spl.mics.application.objects;
 
-import java.util.Collection;
-
 import bgu.spl.mics.application.objects.Data.Type;
 
 /**
@@ -11,19 +9,15 @@ import bgu.spl.mics.application.objects.Data.Type;
  */
 public class CPU {
     private int cores;
-    private Collection<DataBatch> data;
+    private DataBatch dataBatch;
     private Cluster cluster;
 
-    public CPU(int cores,Collection<DataBatch> data,Cluster cluster){
+    public CPU(int cores,DataBatch dataBatch,Cluster cluster){
         this.cores=cores;
-        this.data=data;
+        this.dataBatch=dataBatch;
         this.cluster=cluster;
 
     }
-
-    
-
-
 
     private int calculateProcessingTime(Data.Type type){
         
@@ -35,8 +29,14 @@ public class CPU {
             return 32/cores;
     }
 
-    public void getBatch(DataBatch batch){
+    public void setBatch(DataBatch dataBatch){
+        this.dataBatch=dataBatch;
 
+    }
+
+    public void processSample(){
+        
+        dataBatch.getData().increaseNumOfProcessedSamples();
 
     }
 

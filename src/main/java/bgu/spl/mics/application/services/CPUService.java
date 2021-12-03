@@ -1,7 +1,5 @@
 package bgu.spl.mics.application.services;
 
-import java.util.Collection;
-
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.objects.CPU;
 import bgu.spl.mics.application.objects.Cluster;
@@ -18,9 +16,9 @@ public class CPUService extends MicroService {
 
     private CPU cpu;
 
-    public CPUService(String name,int cores,Collection<DataBatch> data,Cluster cluster) {
+    public CPUService(String name,int cores,DataBatch dataBatch, Cluster cluster) {
         super(name);
-        cpu=new CPU(cores, data, cluster);
+        cpu=new CPU(cores,null, cluster);
 
 
     }
