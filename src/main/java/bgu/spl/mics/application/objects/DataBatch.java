@@ -14,7 +14,7 @@ public class DataBatch {
         this.startIndex=startIndex;
     }
 
-    protected Data getData(){
+    public Data getData(){
         return data;
 
     }

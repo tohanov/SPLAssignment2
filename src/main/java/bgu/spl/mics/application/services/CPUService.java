@@ -16,12 +16,14 @@ public class CPUService extends MicroService {
 
     private CPU cpu;
 
-    public CPUService(String name,int cores,DataBatch dataBatch, Cluster cluster) {
+    public CPUService(String name,int cores, Cluster cluster) {
         super(name);
-        cpu=new CPU(cores,null, cluster);
+        cpu=new CPU(cores, cluster);
 
 
     }
+
+
 
     @Override
     protected void initialize() {

@@ -8,7 +8,7 @@ public class Data {
     /**
      * Enum representing the Data type.
      */
-    enum Type {
+    public enum Type {
         Images, Text, Tabular
     }
 
@@ -24,12 +24,22 @@ public class Data {
 
     }
 
-    Type getType(){
+    public Type getType(){
 
         return type;
     }
 
-    void increaseNumOfProcessedSamples(){
+    public int getProcessed(){
+
+        return processed;
+    }
+
+    public int getSize(){
+
+        return size;
+    }
+
+    public void increaseNumOfProcessedSamples(){
         processed++;
     }
 }
