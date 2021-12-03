@@ -1,7 +1,7 @@
 package bgu.spl.mics.application.messages;
 
-import bgu.spl.mics.Event;
+import bgu.spl.mics.Broadcast;
 
-public class PublishConferenceBroadcast<T> implements Event<T> {
+public class PublishConferenceBroadcast implements Broadcast {
     
 }

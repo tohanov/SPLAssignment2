@@ -12,12 +12,19 @@ import java.util.concurrent.TimeUnit;
  */
 public class Future<T> {
 
+	T result;
+	boolean isResolved;
+	
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
 	public Future() {
-		//TODO: implement this
+		
+		result=null;
+		isResolved=false;
+
 	}
+	
 	
 	/**
      * retrieves the result the Future object holds if it has been resolved.
@@ -29,14 +36,16 @@ public class Future<T> {
      */
 	public T get() {
 		//TODO: implement this.
-		return null;
+		return result;
 	}
 	
 	/**
      * Resolves the result of this Future object.
      */
 	public void resolve (T result) {
-		//TODO: implement this.
+		this.result=result;
+		isResolved=true;
+		
 	}
 	
 	/**
@@ -44,7 +53,7 @@ public class Future<T> {
      */
 	public boolean isDone() {
 		//TODO: implement this.
-		return false;
+		return isResolved;
 	}
 	
 	/**
@@ -60,6 +69,7 @@ public class Future<T> {
      */
 	public T get(long timeout, TimeUnit unit) {
 		//TODO: implement this.
+		
 		return null;
 	}
 
