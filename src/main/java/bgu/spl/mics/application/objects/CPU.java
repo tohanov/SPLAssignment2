@@ -12,14 +12,16 @@ public class CPU {
     private DataBatch dataBatch;
     private Cluster cluster;
 
-    public CPU(int cores,DataBatch dataBatch,Cluster cluster){
+    public CPU(int cores,Cluster cluster){
         this.cores=cores;
-        this.dataBatch=dataBatch;
+        this.dataBatch=null;
         this.cluster=cluster;
 
     }
 
-    private int calculateProcessingTime(Data.Type type){
+    
+
+    int calculateProcessingTime(Data.Type type){
         
         if(type==Type.Images)
             return 32/cores*4;
@@ -34,11 +36,21 @@ public class CPU {
 
     }
 
+    public void removeBatch(){
+        dataBatch=null;
+    }
+
     public void processSample(){
-        
+
         dataBatch.getData().increaseNumOfProcessedSamples();
 
     }
+
+    public boolean isReady(){
+        return dataBatch==null;
+    }
+
+
 
 
 
