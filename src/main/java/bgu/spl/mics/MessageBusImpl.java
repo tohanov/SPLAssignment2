@@ -4,11 +4,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import javax.swing.text.AbstractDocument.BranchElement;
-
 import bgu.spl.mics.application.messages.PublishConferenceBroadcast;
 import bgu.spl.mics.application.messages.PublishResultsEvent;
+import bgu.spl.mics.application.messages.TestModelEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.messages.TrainModelEvent;
+import bgu.spl.mics.example.messages.ExampleEvent;
 
 
 
@@ -25,19 +26,28 @@ public class MessageBusImpl implements MessageBus {
 	
 	HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> broadcastHashMap; 
 
+	HashMap<Class<? extends Event>,LinkedList<MicroService>> eventHashMap;
+
+	HashMap<Class<? extends Event>,Integer> roundRobinOrder;
+
 	private MessageBusImpl(){
 	
 		microServicesHashMap=new HashMap<>();
 		
 		broadcastHashMap=new HashMap<>();
-		broadcastHashMap.put(new PublishConferenceBroadcast().getClass(), new LinkedList<>());
-		broadcastHashMap.put(new TickBroadcast().getClass(), new LinkedList<>());
+		broadcastHashMap.put(PublishConferenceBroadcast.class, new LinkedList<>());
+		broadcastHashMap.put(TickBroadcast.class, new LinkedList<>());
 		
-	
+		eventHashMap=new HashMap<>();
+		eventHashMap.put(PublishResultsEvent.class, new LinkedList<>());
+		eventHashMap.put(TestModelEvent.class, new LinkedList<>());
+		eventHashMap.put(TrainModelEvent.class, new LinkedList<>());
+		eventHashMap.put(ExampleEvent.class, new LinkedList<>());	
+		roundRobinOrder=new HashMap<>();
 
+		for(Class<? extends Event> key:roundRobinOrder.keySet())
+			roundRobinOrder.put(key, 0);
 		
-		
-
 	}
 
 	public static MessageBusImpl getInstance(){
@@ -51,7 +61,8 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		// TODO Auto-generated method stub
+		
+		eventHashMap.get(type).addLast(m);
 
 	}
 
@@ -80,8 +91,20 @@ public class MessageBusImpl implements MessageBus {
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
-		// TODO Auto-generated method stub
-		return null;
+		//choose microservice
+		LinkedList<MicroService> ls=eventHashMap.get(e.getClass());
+		
+		if(ls.size()==0)
+			return null;
+
+		int orderNum=roundRobinOrder.get(e.getClass());		// the current microservices in the round robin order
+		
+		MicroService chosenMicroService=ls.get(orderNum);
+		roundRobinOrder.put(e.getClass(), (orderNum+1) % ls.size());
+
+		microServicesHashMap.get(chosenMicroService).add(e);
+
+		return new Future<T>();
 	}
 
 	@Override
@@ -96,6 +119,10 @@ public class MessageBusImpl implements MessageBus {
 	public void unregister(MicroService m) {
 		
 		microServicesHashMap.remove(m);
+		
+		for(LinkedList<MicroService> ls:broadcastHashMap.values())
+			ls.remove(m);
+		
 
 	}
 
@@ -105,6 +132,26 @@ public class MessageBusImpl implements MessageBus {
 		return null;
 	}
 
-	
+	public boolean isRegistered(MicroService m){
 
+		return microServicesHashMap.get(m)!=null;
+
+	}
+
+	public boolean isSubscribedToBroadcast(Class<? extends Broadcast> type, MicroService m){
+
+		if(broadcastHashMap.get(type)==null)
+			return false;
+		return broadcastHashMap.get(type).contains(m);
+
+	}
+
+	public <T> boolean isSubscribedToEvent(Class<? extends Event<T>> type, MicroService m){
+
+		if(eventHashMap.get(type)==null)
+			return false;
+		return eventHashMap.get(type).contains(m);
+	}
+
+	
 }
