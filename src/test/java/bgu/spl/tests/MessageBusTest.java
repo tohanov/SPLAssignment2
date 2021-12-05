@@ -100,7 +100,6 @@ public class MessageBusTest {
 
         publishFuture.get(); // wait for conference to be done handling
 
-
         assertEquals("Conference didn't get the event notification", prevSuccessfulModelsCount + 1, conference.getNamesOfSuccessfulModels().length);
     }
 
