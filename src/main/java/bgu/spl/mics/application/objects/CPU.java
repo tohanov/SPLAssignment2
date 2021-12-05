@@ -1,5 +1,8 @@
 package bgu.spl.mics.application.objects;
 
+import java.util.Collection;
+import java.util.LinkedList;
+
 import bgu.spl.mics.application.objects.Data.Type;
 
 /**
@@ -9,18 +12,23 @@ import bgu.spl.mics.application.objects.Data.Type;
  */
 public class CPU {
     private int cores;
-    private DataBatch dataBatch;
+    private Collection<DataBatch> dataBatch;
     private Cluster cluster;
 
     public CPU(int cores,Cluster cluster){
         this.cores=cores;
-        this.dataBatch=null;
+        this.dataBatch=new LinkedList<>();
         this.cluster=cluster;
 
     }
 
     
 
+    /**
+     * 
+     * @param type==Data.Type.Images || @param type==Data.Type.Images || @param type==Data.Type.Images 
+     *  
+     */
     int calculateProcessingTime(Data.Type type){
         
         if(type==Type.Images)
@@ -31,23 +39,36 @@ public class CPU {
             return 32/cores;
     }
 
-    public void setBatch(DataBatch dataBatch){
-        this.dataBatch=dataBatch;
+    /**
+     * 
+     * @param dataBatch!=null
+     * @pre this.dataBatch==null
+     * @post this.dataBatch=dataBatch
+     */
+    public void addBatch(DataBatch dataBatch){
+        this.dataBatch.add(dataBatch);
 
     }
 
+    /**
+     * @post dataBatch==null
+     */
     public void removeBatch(){
-        dataBatch=null;
+        ((LinkedList<DataBatch>) dataBatch).removeLast();
     }
 
+    /**
+     * @pre dataBatch.getData().processed < dataBatch.getData().size
+     * @post dataBatch.getData().processed= @pre dataBatch.getData().processed + 1
+     */
     public void processSample(){
 
-        dataBatch.getData().increaseNumOfProcessedSamples();
-
+        ((LinkedList<DataBatch>) dataBatch).getFirst().getData().increaseNumOfProcessedSamples();
+       
     }
 
     public boolean isReady(){
-        return dataBatch==null;
+        return dataBatch.isEmpty();
     }
 
 
