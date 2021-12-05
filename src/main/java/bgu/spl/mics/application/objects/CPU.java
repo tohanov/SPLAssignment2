@@ -41,24 +41,24 @@ public class CPU {
 
     /**
      * 
-     * @param dataBatch!=null
-     * @pre this.dataBatch==null
-     * @post this.dataBatch=dataBatch
+     * @param toAdd!=null
+     * 
+     * @post dataBatch.last()=toAdd
      */
-    public void addBatch(DataBatch dataBatch){
-        this.dataBatch.add(dataBatch);
+    public void addBatch(DataBatch toAdd){
+        this.dataBatch.add(toAdd);
 
     }
 
     /**
-     * @post dataBatch==null
+     * @post dataBatch.size=@pre databatch.size()-1
      */
     public void removeBatch(){
         ((LinkedList<DataBatch>) dataBatch).removeLast();
     }
 
     /**
-     * @pre dataBatch.getData().processed < dataBatch.getData().size
+     * @pre  dataBatch.getFirst().getData().getData().processed <  dataBatch.getFirst().getData().size
      * @post dataBatch.getData().processed= @pre dataBatch.getData().processed + 1
      */
     public void processSample(){
