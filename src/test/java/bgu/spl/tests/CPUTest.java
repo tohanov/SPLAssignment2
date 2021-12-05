@@ -18,7 +18,7 @@ public class CPUTest {
 
     @Before
     public void setUp(){
-        cpu=new CPU(8, new Cluster());
+        cpu=new CPU(8, Cluster.getInstance());
     }
 
     @Test
@@ -28,7 +28,7 @@ public class CPUTest {
     }
 
     @Test
-    public void testSetBatch(){
+    public void testSetBatch(){ // TODO ask
         DataBatch dataBatch=new DataBatch((new Data(Data.Type.Images, 0, 10)), 0);
         cpu.setBatch(dataBatch);
         assertEquals("Expected cpu.isReady() to be false, instead got true",false, cpu.isReady());

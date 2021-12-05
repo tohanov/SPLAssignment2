@@ -10,7 +10,6 @@ import org.junit.Before;
 import org.junit.After;
 import org.junit.Test;
 
-import bgu.spl.mics.application.objects.Data.Type;
 import bgu.spl.mics.Broadcast;
 import bgu.spl.mics.Event;
 import bgu.spl.mics.Future;
@@ -31,13 +30,35 @@ public class MessageBusTest {
 
     MessageBusImpl messageBus;
     MicroService m1;
+	Thread messageBusThread = null;
+	// Thread m1thrd = null;
+
 
     @Before
     public void setUp(){
 
-        messageBus=MessageBusImpl.getInstance();
-        m1=new ConferenceService("conference");
+        messageBus = MessageBusImpl.getInstance();
+
+        m1 = new ConferenceService("conference");
+		// Thread m1thrd = new Thread(m1);
+		// m1thrd.start();
     }
+
+
+	@After
+	public void tearDown() {
+		if (messageBusThread != null) {
+			messageBusThread.interrupt();
+			try { messageBusThread.join(); }
+			catch (Exception e) { }
+		}
+		// if (m1thrd != null) {
+		// 	messageBusThread.interrupt();
+		// 	try { messageBusThread.join(); }
+		// 	catch (Exception e) { }
+		// }
+	}
+
 
     @Test
     public void testRegister(){
@@ -48,6 +69,7 @@ public class MessageBusTest {
       
       
     }
+
 
     @Test
     public void testUnregister(){
@@ -69,11 +91,8 @@ public class MessageBusTest {
 
         messageBus.subscribeEvent(ExampleEvent.class, m1);    //arbitrarily chosen event
         assertTrue("m1 should be subscribed to example!", messageBus.isSubscribedToEvent(ExampleEvent.class, m1));
-
-        
-
-
     }
+
 
     @Test
     public void testSubscribeBroadcast(){
@@ -82,10 +101,8 @@ public class MessageBusTest {
 
         messageBus.subscribeBroadcast(PublishConferenceBroadcast.class , m1);
         assertTrue("m1 should be subscribed to tick broadcast!", messageBus.isSubscribedToBroadcast(PublishConferenceBroadcast.class, m1));
-
-
-
     }
+
 
     @Test
     public void testSendEvent(){
@@ -93,19 +110,35 @@ public class MessageBusTest {
         ConferenceService conference = new ConferenceService("conference");
 
         messageBus.subscribeEvent((Class<? extends Event<Data>>) PublishResultsEvent.class, conference);
-        // messageBus.subscribeBroadcast(PublishConferenceBroadcast.class , student2Service);
-        
+
+		Thread t1 = new Thread(student1Service);
+		Thread t2 = new Thread(conference);
+		t1.start();
+		t2.start();
+
         int prevSuccessfulModelsCount = conference.getNamesOfSuccessfulModels().length;
+		
         Future<Data> publishFuture = messageBus.sendEvent(new PublishResultsEvent<Data>(student1Service.getStudent()));
 
         publishFuture.get(); // wait for conference to be done handling
 
         assertEquals("Conference didn't get the event notification", prevSuccessfulModelsCount + 1, conference.getNamesOfSuccessfulModels().length);
+		t1.interrupt();
+		t2.interrupt();
+		try {
+			t1.join();
+			t2.join();
+		} catch (Exception e) {
+
+		}
     }
+
 
     @Test
     public void testSendBroadcast(){
         StudentService student1Service = new StudentService("student1");
+		Thread t1 = new Thread(student1Service);
+
         messageBus.subscribeBroadcast(PublishConferenceBroadcast.class , student1Service);
 
         int previousPapersRead = student1Service.getStudent().getPapersRead();
@@ -113,9 +146,12 @@ public class MessageBusTest {
         messageBus.sendBroadcast((Broadcast)new PublishConferenceBroadcast());
 
         assertEquals("Broadcast didn't reach the student.", previousPapersRead + 1, student1Service.getStudent().getPapersRead());
+
+		t1.interrupt();
+		try {
+			t1.join();
+		} catch (Exception e) {
+			
+		}
     }
-
-
-
-
 }
