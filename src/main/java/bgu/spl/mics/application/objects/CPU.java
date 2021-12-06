@@ -1,6 +1,8 @@
 package bgu.spl.mics.application.objects;
 
 import bgu.spl.mics.application.objects.Data.Type;
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * Passive object representing a single CPU.
@@ -9,18 +11,22 @@ import bgu.spl.mics.application.objects.Data.Type;
  */
 public class CPU {
     private int cores;
-    private DataBatch dataBatch;
+    private Collection<DataBatch> dataBatch;
     private Cluster cluster;
 
     public CPU(int cores,Cluster cluster){
         this.cores=cores;
-        this.dataBatch=null;
+        this.dataBatch=new LinkedList<>();
         this.cluster=cluster;
 
     }
 
     
-
+	/**
+     * @param type Type 
+     * @pre type==Data.Type.Images || type==Data.Type.Images || type==Data.Type.Images 
+     *  
+     */
     int calculateProcessingTime(Data.Type type){
         
         if(type==Type.Images)
@@ -31,23 +37,43 @@ public class CPU {
             return 32/cores;
     }
 
-    public void setBatch(DataBatch dataBatch){
-        this.dataBatch=dataBatch;
+  	
+	/**
+     * 
+     * @param toAdd The batch to add
+     * @pre toAdd!=null
+     * @post dataBatch.last()=toAdd
+     */
+    public void addBatch(DataBatch toAdd){
+        this.dataBatch.add(toAdd);
 
     }
 
+
+	/**
+     * @post dataBatch.size=@pre databatch.size()-1
+     */
     public void removeBatch(){
-        dataBatch=null;
+        ((LinkedList<DataBatch>) dataBatch).removeLast();
     }
 
+
+	/**
+     * @pre  dataBatch.getFirst().getData().getData().processed <  dataBatch.getFirst().getData().size
+     * @post dataBatch.getData().processed= @pre dataBatch.getData().processed + 1
+     */
     public void processSample(){
 
-        dataBatch.getData().increaseNumOfProcessedSamples();
+        ((LinkedList<DataBatch>) dataBatch).getFirst().getData().increaseNumOfProcessedSamples();
 
     }
 
+
+	/**
+	 * @return True if CPU is ready for batches, False otherwise
+	 */
     public boolean isReady(){
-        return dataBatch==null;
+        return dataBatch.isEmpty();
     }
 
 
