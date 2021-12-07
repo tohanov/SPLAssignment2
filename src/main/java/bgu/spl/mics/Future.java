@@ -41,6 +41,8 @@ public class Future<T> {
 	
 	/**
      * Resolves the result of this Future object.
+	 * @post this.result=result
+	 * @post isResolved=true
      */
 	public void resolve (T result) {
 		this.result=result;

@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.objects;
 
+import java.util.Collection;
 
 /**
  * Passive object representing the cluster.
@@ -10,13 +11,47 @@ package bgu.spl.mics.application.objects;
  */
 public class Cluster {
 
+	private static Cluster instance = null;
+
+
+	// region According to instructions
+	Collection<GPU> GPUS;
+	Collection<CPU> CPUS;
+	// TODO add statistics
+	// endregion According to instructions
+
 
 	/**
      * Retrieves the single instance of this class.
      */
 	public static Cluster getInstance() {
-		//TODO: Implement this
-		return null;
+		if(instance == null)
+			instance = new Cluster();
+
+		return instance;
 	}
 
+
+	public Collection<GPU> getGPUs() {
+		return GPUS;
+	}
+
+
+	public Collection<CPU> gCPUs() {
+		return CPUS;
+	}
+
+
+	public void registerCPU(CPU cpu) {
+		synchronized(CPUS) {
+			CPUS.add(cpu);
+		}
+	}
+
+
+	public void registerGPU(GPU gpu) {
+		synchronized(GPUS) {
+			GPUS.add(gpu);
+		}
+	}
 }

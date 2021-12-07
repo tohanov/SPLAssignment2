@@ -13,8 +13,8 @@ import bgu.spl.mics.MicroService;
  */
 public class TimeService extends MicroService{
 
-	public TimeService() {
-		super("Change_This_Name");
+	public TimeService(int _duration, int _tickTime) {
+		super("TimeService");
 		// TODO Implement this
 	}
 
