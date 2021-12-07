@@ -30,22 +30,24 @@ public class CPUTest {
     @Test
     public void testSetBatch(){ // TODO ask
         DataBatch dataBatch=new DataBatch((new Data(Data.Type.Images, 0, 10)), 0);
-        cpu.setBatch(dataBatch);
+        cpu.addBatch(dataBatch);
         assertEquals("Expected cpu.isReady() to be false, instead got true",false, cpu.isReady());
 
     }
 
     @Test
     public void testRemoveBatch(){
+        DataBatch dataBatch=new DataBatch((new Data(Data.Type.Images, 0, 10)), 0);
+        cpu.addBatch(dataBatch);
+
         cpu.removeBatch();
         assertEquals("Expected cpu.isReady() to be true, instead got false",true, cpu.isReady());
-
     }
 
     @Test
     public void testProcessSample(){
         DataBatch dataBatch=new DataBatch((new Data(Data.Type.Images, 0, 10)), 0);
-        cpu.setBatch(dataBatch);
+        cpu.addBatch(dataBatch);
         assertEquals(dataBatch.getData().getProcessed(), 0);
         cpu.processSample();
         assertEquals(dataBatch.getData().getProcessed(), 1);

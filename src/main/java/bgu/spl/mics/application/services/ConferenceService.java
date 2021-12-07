@@ -13,7 +13,7 @@ import bgu.spl.mics.MicroService;
  */
 public class ConferenceService extends MicroService {
     public ConferenceService(String name) {
-        super("Change_This_Name");
+        super(name);
         // TODO Implement this
     }
 

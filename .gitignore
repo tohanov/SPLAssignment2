@@ -1,2 +1,8 @@
-target/**
+# target/**
+./**
 
+!src/
+!.gitignore
+!pom.xml
+!example_input.json
+!README.md
