@@ -87,6 +87,7 @@ public class MessageBusImpl implements MessageBus {
 
 		for(MicroService m: ls)
 			microServicesHashMap.get(m).add(b);
+			//notify?
 	}
 
 	
