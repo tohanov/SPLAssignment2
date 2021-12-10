@@ -39,7 +39,7 @@ public class CPUTest {
     public void testRemoveBatch(){
         DataBatch dataBatch=new DataBatch((new Data(Data.Type.Images, 0, 10)), 0);
         cpu.addBatch(dataBatch);
-
+       
         cpu.removeBatch();
         assertEquals("Expected cpu.isReady() to be true, instead got false",true, cpu.isReady());
     }

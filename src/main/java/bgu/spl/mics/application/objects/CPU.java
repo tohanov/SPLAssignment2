@@ -1,5 +1,8 @@
 package bgu.spl.mics.application.objects;
 
+import java.util.Collection;
+import java.util.LinkedList;
+
 import bgu.spl.mics.application.objects.Data.Type;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -37,6 +40,10 @@ public class CPU {
             return 32/cores;
     }
 
+    /**
+     * 
+     * @param toAdd!=null
+     * 
   	
 	/**
      * 
@@ -49,14 +56,14 @@ public class CPU {
 
     }
 
-
-	/**
+    /**
      * @post dataBatch.size=@pre databatch.size()-1
      */
     public void removeBatch(){
         ((LinkedList<DataBatch>) dataBatch).removeLast();
     }
 
+    /**
 
 	/**
      * @pre  dataBatch.getFirst().getData().getData().processed <  dataBatch.getFirst().getData().size
@@ -65,7 +72,6 @@ public class CPU {
     public void processSample(){
 
         ((LinkedList<DataBatch>) dataBatch).getFirst().getData().increaseNumOfProcessedSamples();
-
     }
 
 

@@ -14,6 +14,11 @@ import com.google.gson.GsonBuilder;
  */
 public class CRMSRunner {
     public static void main(String[] args) {
+        System.out.println("Hello World!");
+
+       PublishResultsEvent a=new PublishResultsEvent<>(null); 
+       ExampleEvent b=new ExampleEvent("idan");
+       System.out.println(PublishResultsEvent.class);
         if (args.length >= 2) {
 			parseConfigFile(args[1]); // TODO: can assume correctness of input?
 		}
