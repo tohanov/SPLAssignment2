@@ -28,7 +28,7 @@ public class MessageBusImpl implements MessageBus {
 
 	HashMap<Class<? extends Event>,LinkedList<MicroService>> eventHashMap;
 
-	HashMap<Class<? extends Event>,Integer> roundRobinOrder;
+	HashMap<Event,Future> futureHashMap;
 
 	private MessageBusImpl(){
 	
@@ -43,11 +43,8 @@ public class MessageBusImpl implements MessageBus {
 		eventHashMap.put(TestModelEvent.class, new LinkedList<>());
 		eventHashMap.put(TrainModelEvent.class, new LinkedList<>());
 		eventHashMap.put(ExampleEvent.class, new LinkedList<>());	
-		roundRobinOrder=new HashMap<>();
 
-		for(Class<? extends Event> key:roundRobinOrder.keySet())
-			roundRobinOrder.put(key, 0);
-		
+			
 	}
 
 	public static MessageBusImpl getInstance(){
@@ -75,8 +72,12 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public <T> void complete(Event<T> e, T result) {
-		// TODO Auto-generated method stub
 
+		Future <T> f=futureHashMap.get(e);
+		f.resolve(result);
+
+		futureHashMap.remove(e);
+		
 	}
 
 	@Override
@@ -91,21 +92,27 @@ public class MessageBusImpl implements MessageBus {
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
-		//choose microservice
-		LinkedList<MicroService> ls=eventHashMap.get(e.getClass());
+		
+		LinkedList<MicroService> ls=eventHashMap.get(e.getClass());		//choose microservice
 		
 		if(ls.size()==0)
 			return null;
 
-		int orderNum=roundRobinOrder.get(e.getClass());		// the current microservices in the round robin order
+			
+		MicroService chosenMicroService=ls.getFirst();
+		ls.addLast(ls.removeFirst());
+		microServicesHashMap.get(chosenMicroService).add(e);	//adds the message to the chosen micro-service queue
+
+		Future<T> f=new Future<T>();
+		futureHashMap.put(e, f);
+
+		chosenMicroService.notify();
 		
-		MicroService chosenMicroService=ls.get(orderNum);
-		roundRobinOrder.put(e.getClass(), (orderNum+1) % ls.size());
+		return f;
 
-		microServicesHashMap.get(chosenMicroService).add(e);
-
-		return new Future<T>();
 	}
+
+
 
 	@Override
 	public void register(MicroService m) {
@@ -128,8 +135,20 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
+		//TODO: need to check when to throw exception
+		
+		Queue<Message> ls=microServicesHashMap.get(m);
+		
+		while(ls.isEmpty()){
+		
+			
+			m.wait();
+
+		}
+
+		Message message=((LinkedList<Message>) ls).removeFirst();
+
+		return message;
 	}
 
 	public boolean isRegistered(MicroService m){
