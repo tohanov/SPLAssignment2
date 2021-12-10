@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.LinkedList;
 
 import bgu.spl.mics.application.objects.Data.Type;
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * Passive object representing a single CPU.
@@ -23,10 +25,9 @@ public class CPU {
     }
 
     
-
-    /**
-     * 
-     * @param type==Data.Type.Images || @param type==Data.Type.Images || @param type==Data.Type.Images 
+	/**
+     * @param type Type 
+     * @pre type==Data.Type.Images || type==Data.Type.Images || type==Data.Type.Images 
      *  
      */
     int calculateProcessingTime(Data.Type type){
@@ -43,6 +44,11 @@ public class CPU {
      * 
      * @param toAdd!=null
      * 
+  	
+	/**
+     * 
+     * @param toAdd The batch to add
+     * @pre toAdd!=null
      * @post dataBatch.last()=toAdd
      */
     public void addBatch(DataBatch toAdd){
@@ -58,15 +64,20 @@ public class CPU {
     }
 
     /**
+
+	/**
      * @pre  dataBatch.getFirst().getData().getData().processed <  dataBatch.getFirst().getData().size
      * @post dataBatch.getData().processed= @pre dataBatch.getData().processed + 1
      */
     public void processSample(){
 
         ((LinkedList<DataBatch>) dataBatch).getFirst().getData().increaseNumOfProcessedSamples();
-       
     }
 
+
+	/**
+	 * @return True if CPU is ready for batches, False otherwise
+	 */
     public boolean isReady(){
         return dataBatch.isEmpty();
     }

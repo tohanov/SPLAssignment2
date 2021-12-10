@@ -22,4 +22,9 @@ public class ConferenceService extends MicroService {
         // TODO Implement this
 
     }
+
+    public String[] getNamesOfSuccessfulModels() {
+        // TODO complete
+        return null;
+    }
 }

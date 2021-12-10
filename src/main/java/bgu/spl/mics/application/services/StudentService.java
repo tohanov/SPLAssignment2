@@ -1,7 +1,7 @@
 package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.MicroService;
-
+import bgu.spl.mics.application.objects.Student;
 /**
  * Student is responsible for sending the {@link TrainModelEvent},
  * {@link TestModelEvent} and {@link PublishResultsEvent}.
@@ -21,5 +21,10 @@ public class StudentService extends MicroService {
     protected void initialize() {
         // TODO Implement this
 
+    }
+
+    public Student getStudent() {
+        // TODO: change
+        return null;
     }
 }

@@ -18,4 +18,8 @@ public class Student {
     private int publications;
     private int papersRead;
 
+    public int getPapersRead() {
+        return papersRead;
+    }
+
 }
