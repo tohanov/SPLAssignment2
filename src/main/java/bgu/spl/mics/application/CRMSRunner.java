@@ -23,12 +23,20 @@ public class CRMSRunner {
 			parseConfigFile(args[1]); // TODO: can assume correctness of input?
 		}
 
+		// Start threads
+		//join with TimeService
+		//termiate threads
+
+
+
 	// 	PublishResultsEvent a=new PublishResultsEvent<>(); 
     //    ExampleEvent b=new ExampleEvent("idan");
     //    System.out.println(PublishResultsEvent.class);
     }
 
 	private static void parseConfigFile(String configFilePath) {
-		// TODO
+		Gson gson = new Gson();
+		// JsonReader reader = new JsonReader(new FileReader(filename));
+		// List<Review> data = gson.fromJson(reader, REVIEW_TYPE); // 
 	}
 }
