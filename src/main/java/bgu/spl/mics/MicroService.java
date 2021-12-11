@@ -1,6 +1,8 @@
 package bgu.spl.mics;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * The MicroService is an abstract class that any micro-service in the system
@@ -25,7 +27,8 @@ public abstract class MicroService implements Runnable {
     private boolean terminated = false;
     private final String name;
     private MessageBusImpl messageBus;
-    private HashMap<Class <?>,Callback> callbackHashMap;
+    private HashMap<Class<Message>, Callback<Message>> callbackHashMap;
+	private ConcurrentLinkedQueue<Callback<Message>> callbackQueue;
 
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
@@ -34,6 +37,8 @@ public abstract class MicroService implements Runnable {
     public MicroService(String name) {
         this.name = name;
         messageBus=MessageBusImpl.getInstance();
+
+		callbackQueue = new ConcurrentLinkedQueue<>();
     }
 
     /**
@@ -60,7 +65,7 @@ public abstract class MicroService implements Runnable {
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
         
        messageBus.subscribeEvent(type, this);
-       callbackHashMap.put(type, callback);
+       callbackHashMap.put((Class<Message>)type, (Callback<Message>)callback);
 
 
     }
@@ -88,7 +93,7 @@ public abstract class MicroService implements Runnable {
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
        
         messageBus.subscribeBroadcast(type, this);
-        callbackHashMap.put(type, callback);
+        callbackHashMap.put((Class<Message>)type, (Callback<Message>)callback);
 
     }
 
@@ -166,12 +171,37 @@ public abstract class MicroService implements Runnable {
     public final void run() {
 		MessageBusImpl.getInstance().register(this);
 		
+		synchronized (System.out) { // TODO: remove debug block
+			System.out.println(name + " has started :)"); 
+		}
+
         initialize();
         while (!terminated) {
+			try {
+				Message m = messageBus.awaitMessage(this);
 
+				// if (m instanceof TerminateAEllBroadcast) {
+				// 	terminate();
+				// }
+
+				// else if ( ! ) {
+
+				// }
+
+				Callback<Message> c = callbackHashMap.get(m.getClass());
+				// else {
+				// 	Callback<Message> c = callbackHashMap.get(((Broadcast)m.getClass()));
+				// }
+
+				c.call(m);
+			}
+			catch (InterruptedException e) { }
         }
 
 		MessageBusImpl.getInstance().unregister(this);
     }
+
+
+	// private 
 
 }

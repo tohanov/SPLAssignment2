@@ -12,14 +12,31 @@ public class Student {
         MSc, PhD
     }
 
-    private int name;
+    private String name;
     private String department;
     private Degree status;
     private int publications;
     private int papersRead;
 
+
     public int getPapersRead() {
         return papersRead;
     }
+
+
+	// region for serialization from json
+
+	private Model[] models;
+
+	public Student(String _name, String _department, String _status) {
+
+		name = _name;
+		department = _department;
+		status = (_status == "MSc") ? Degree.MSc : Degree.PhD;
+		publications = 0;
+		papersRead = 0;
+	}
+
+	// endregion for serialization from json
 
 }

@@ -16,12 +16,12 @@ public class CPUService extends MicroService {
 
     private CPU cpu;
 
-    public CPUService(String name,int cores, Cluster cluster) {
-        super(name);
-        cpu=new CPU(cores, cluster);
+    // public CPUService(String name,int cores, Cluster cluster) {
+    //     super(name);
+    //     cpu=new CPU(cores, cluster);
 
 
-    }
+    // }
 
 
 
@@ -30,4 +30,16 @@ public class CPUService extends MicroService {
         // TODO Implement this
 
     }
+
+
+	// region for serialization from json
+	private static int cpuCounter = 0;
+
+	public CPUService(int _cpu) {
+		super("CPU_" + cpuCounter);
+
+		cpu = new CPU(_cpu);
+		++cpuCounter;
+	}
+	// endregion for serialization from json
 }
