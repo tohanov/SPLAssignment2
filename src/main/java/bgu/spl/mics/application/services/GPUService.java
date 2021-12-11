@@ -37,7 +37,7 @@ public class GPUService extends MicroService {
 
 	// region Added
 	private static Cluster cluster;
-	private GPU gpu;
+	// private GPU gpu;
 	private int trainingDelay;
 	// private static final HashMap<GPU.Type,int> delays = new HashMap<GPU.Type,int>() {GPU.Type.RTX3090 : 1, GPU.Type.RTX2080 : 2, GPU.Type.GTX1080 : 4};
 	// endregion Added
@@ -86,4 +86,17 @@ public class GPUService extends MicroService {
 			// TODO
 		});
     }
+
+
+	// region for serialization from json
+	private static int gpuCounter = 0;
+	GPU gpu;
+
+	public GPUService(String _gpu) {
+		super("GPU_" + gpuCounter);
+
+		gpu = new GPU(_gpu);
+		++gpuCounter;
+	}
+	// endregion for serialization from json
 }
