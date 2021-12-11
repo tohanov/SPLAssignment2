@@ -32,35 +32,48 @@ public class GPU {
 	// endregion Added fields
 
 	/**
-	 * @param _name Name given to the GPU
-	 * @param _type GPU type
+	 * @param _type a string representing the GPU type
 	 * 
 	 * @post vRAM is in {8, 16, 32}
 	 * @post processedBatchesNum == 0
 	 * @post MessageBusImpl.getInstance().isRegistered(service) == true
 	 * @post service != null
 	 */
-    public GPU(String _name, Type _type) {
-        this.type = _type;
-		this.service = new GPUService(_name, this);
+    // public GPU(/*String _name,*/ String _type) {
+    //     this.type = typeFromString(_type);
+	// 	// this.service = new GPUService(_name, this);
 
-		processedBatchesNum = 0;
+	// 	processedBatchesNum = 0;
 
-		switch(type) {
-			case GTX1080:
-				vRAM = 8;
-				break;
-			case RTX2080:
-				vRAM = 16;
-				break;
-			default : // RTX3090:
-				vRAM = 32;
-		}
+	// 	switch(type) {
+	// 		case GTX1080:
+	// 			vRAM = 8;
+	// 			break;
+	// 		case RTX2080:
+	// 			vRAM = 16;
+	// 			break;
+	// 		default : // RTX3090:
+	// 			vRAM = 32;
+	// 	}
+    // }
 
-		// processedBatches = 
-    }
 
-    /**
+    private Type typeFromString(String _type) {
+		Type returnType;
+		String uppercaseType = _type.toUpperCase();
+
+		if (uppercaseType == "RTX3090")
+			returnType = Type.RTX3090;
+		else if (uppercaseType == "RTX2080")
+			returnType = Type.RTX2080;
+		else
+			returnType = Type.GTX1080;
+		
+		return returnType;
+	}
+
+
+	/**
      * @return The type of the GPU
      */
     public Type getType () {
@@ -107,5 +120,26 @@ public class GPU {
 	public void finishTrainingBatch() {
 		--processedBatchesNum;
 	}
+
+
+	// region for serialization from json
+	public GPU(String _type) {
+        this.type = typeFromString(_type);
+		// this.service = new GPUService(_name, this);
+
+		processedBatchesNum = 0;
+
+		switch(type) {
+			case GTX1080:
+				vRAM = 8;
+				break;
+			case RTX2080:
+				vRAM = 16;
+				break;
+			default : // RTX3090:
+				vRAM = 32;
+		}
+    }
+	// endregion for serialization from json
 
 }

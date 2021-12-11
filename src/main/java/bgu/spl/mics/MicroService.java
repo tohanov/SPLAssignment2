@@ -171,14 +171,18 @@ public abstract class MicroService implements Runnable {
     public final void run() {
 		MessageBusImpl.getInstance().register(this);
 		
+		synchronized (System.out) { // TODO: remove debug block
+			System.out.println(name + " has started :)"); 
+		}
+
         initialize();
         while (!terminated) {
 			try {
 				Message m = messageBus.awaitMessage(this);
 
-				if (m instanceof TerminateAllBroadcast) {
-					terminate();
-				}
+				// if (m instanceof TerminateAEllBroadcast) {
+				// 	terminate();
+				// }
 
 				// else if ( ! ) {
 
