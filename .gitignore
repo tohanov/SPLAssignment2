@@ -1,9 +1,9 @@
-./*
+*
 
-!src/
 !.gitignore
 !pom.xml
 !example_input.json
 !README.md
-
+!src/
+!src/**
 !planning.drawio

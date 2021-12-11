@@ -17,12 +17,12 @@ public class CPU {
     private Collection<DataBatch> dataBatch;
     private Cluster cluster;
 
-    public CPU(int cores,Cluster cluster){
-        this.cores=cores;
-        this.dataBatch=new LinkedList<>();
-        this.cluster=cluster;
+    // public CPU(int cores,Cluster cluster){
+    //     this.cores=cores;
+    //     this.dataBatch=new LinkedList<>();
+    //     this.cluster=cluster;
 
-    }
+    // }
 
     
 	/**
@@ -84,7 +84,13 @@ public class CPU {
 
 
 
-
+	// region for serialization from json
+	public CPU(int _cores) {
+		cores = _cores;
+        dataBatch = new LinkedList<>(); // TODO: make thread-safe?
+        cluster = Cluster.getInstance();
+	}
+	// endregion for serialization from json
 
 
 

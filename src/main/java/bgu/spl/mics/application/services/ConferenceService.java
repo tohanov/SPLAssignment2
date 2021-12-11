@@ -1,5 +1,7 @@
 package bgu.spl.mics.application.services;
 
+import java.util.Map;
+
 import bgu.spl.mics.MicroService;
 
 /**
@@ -12,10 +14,10 @@ import bgu.spl.mics.MicroService;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class ConferenceService extends MicroService {
-    public ConferenceService(String name) {
-        super(name);
-        // TODO Implement this
-    }
+    // public ConferenceService(String name) {
+    //     super(name);
+    //     // TODO Implement this
+    // }
 
     @Override
     protected void initialize() {
@@ -27,4 +29,14 @@ public class ConferenceService extends MicroService {
         // TODO complete
         return null;
     }
+
+	// region for serialization from json
+	private int date;
+
+	public ConferenceService(Map<String,Object> _conference) {
+        super((String)_conference.get("name"));
+        
+		date = ((Double)_conference.get("date")).intValue();
+    }
+	// endregion for serialization from json
 }

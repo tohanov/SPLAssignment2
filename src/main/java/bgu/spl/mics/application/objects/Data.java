@@ -12,34 +12,52 @@ public class Data {
         Images, Text, Tabular
     }
 
+
     private Type type;
     private int processed;
     private int size;
 
-    public Data(Type type,int processed,int size){
+
+    public Data(Type type, /*int processed,*/ int size){
 
         this.type=type;
-        this.processed=processed;
+        this.processed=0; // TODO: fix
         this.size=size;
 
     }
+
 
     public Type getType(){
 
         return type;
     }
 
+
     public int getProcessed(){
 
         return processed;
     }
+
 
     public int getSize(){
 
         return size;
     }
 
+
     public void increaseNumOfProcessedSamples(){
         processed++;
     }
+
+
+	public static Data.Type typeFromString(String _strType) {
+		Data.Type retType;
+		String lowerCaseType = _strType.toLowerCase();
+
+		if (lowerCaseType == "images") retType = Type.Images;
+		else if (lowerCaseType == "text") retType = Type.Text;
+		else retType = Type.Tabular;
+
+		return retType;
+	}
 }
