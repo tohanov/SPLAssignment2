@@ -1,6 +1,8 @@
 package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.Callbacks.CPU_tick_callback;
+import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.CPU;
 import bgu.spl.mics.application.objects.Cluster;
 import bgu.spl.mics.application.objects.DataBatch;
@@ -27,7 +29,9 @@ public class CPUService extends MicroService {
 
     @Override
     protected void initialize() {
-        // TODO Implement this
+        
+        subscribeBroadcast(TickBroadcast.class,new CPU_tick_callback(cpu));
+
 
     }
 

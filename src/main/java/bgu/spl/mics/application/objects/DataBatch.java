@@ -19,4 +19,8 @@ public class DataBatch {
 
     }
 
+    public boolean isFirstBatchProcessed(){
+        return data.isProcessed();
+    }
+
 }

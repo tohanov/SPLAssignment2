@@ -44,9 +44,18 @@ public class Data {
         return size;
     }
 
+    public boolean isProcessed(){
 
-    public void increaseNumOfProcessedSamples(){
-        processed++;
+        return processed==size;
+    }
+
+    public void increaseNumOfProcessedSamples(int number_of_processed_samples_to_add){
+        processed+=number_of_processed_samples_to_add;
+
+    // extreme case    
+        if(processed>size)
+            processed=size;
+
     }
 
 

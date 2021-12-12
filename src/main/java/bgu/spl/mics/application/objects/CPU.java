@@ -17,12 +17,12 @@ public class CPU {
     private Collection<DataBatch> dataBatch;
     private Cluster cluster;
 
-    // public CPU(int cores,Cluster cluster){
-    //     this.cores=cores;
-    //     this.dataBatch=new LinkedList<>();
-    //     this.cluster=cluster;
+     public CPU(int cores,Cluster cluster){
+        this.cores=cores;
+        this.dataBatch=new LinkedList<>();
+        this.cluster=cluster;
 
-    // }
+     }
 
     
 	/**
@@ -59,29 +59,35 @@ public class CPU {
     /**
      * @post dataBatch.size=@pre databatch.size()-1
      */
-    public void removeBatch(){
-        ((LinkedList<DataBatch>) dataBatch).removeLast();
+    public DataBatch removeBatch(){
+        return ((LinkedList<DataBatch>) dataBatch).removeFirst();
     }
+
+    
 
     /**
 
 	/**
      * @pre  dataBatch.getFirst().getData().getData().processed <  dataBatch.getFirst().getData().size
-     * @post dataBatch.getData().processed= @pre dataBatch.getData().processed + 1
+     * @post dataBatch.getData().processed= @pre dataBatch.getData().processed + 1000 / calculateProcessingTime(dataType) 
      */
-    public void processSample(){
+    public void process(){
 
-        ((LinkedList<DataBatch>) dataBatch).getFirst().getData().increaseNumOfProcessedSamples();
+        int toAdd=1000/calculateProcessingTime(((LinkedList<DataBatch>) dataBatch).getFirst().getData().getType());
+        ((LinkedList<DataBatch>) dataBatch).getFirst().getData().increaseNumOfProcessedSamples(toAdd);
     }
 
 
 	/**
 	 * @return True if CPU is ready for batches, False otherwise
 	 */
-    public boolean isReady(){
+    public boolean isEmpty(){
         return dataBatch.isEmpty();
     }
 
+    public boolean isCurrentBatchReady(){
+        return ((LinkedList<DataBatch>) dataBatch).getFirst().isFirstBatchProcessed();
+    }
 
 
 	// region for serialization from json
