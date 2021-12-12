@@ -3,6 +3,7 @@ package bgu.spl.mics;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 
 import bgu.spl.mics.application.messages.PublishConferenceBroadcast;
 import bgu.spl.mics.application.messages.PublishResultsEvent;
@@ -22,6 +23,7 @@ public class MessageBusImpl implements MessageBus {
 
 	private final static MessageBusImpl instance = new MessageBusImpl();
 
+	
 	HashMap<MicroService,Queue<Message>> microServicesHashMap;
 	HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> broadcastHashMap; 
 	HashMap<Class<? extends Event>,LinkedList<MicroService>> eventHashMap;

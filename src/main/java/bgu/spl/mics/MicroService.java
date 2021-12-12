@@ -154,7 +154,7 @@ public abstract class MicroService implements Runnable {
      * Signals the event loop that it must terminate after handling the current
      * message.
      */
-    protected final void terminate() {
+    protected final void  terminate() {
         this.terminated = true;
     }
 
@@ -187,7 +187,7 @@ public abstract class MicroService implements Runnable {
 			try {
 				Message message = messageBus.awaitMessage(this);
 				Class<? extends Message> messageClass = message.getClass();
-
+/*
 				if (messageClass != TickBroadcast.class) {
 					// TODO: put aside the message into an internal queue
 				}
@@ -199,7 +199,7 @@ public abstract class MicroService implements Runnable {
 						// TODO: operate on the mesages that were put aside to the internal queue
 					}
 				}
-				
+				*/
 				callbackHashMap.get(messageClass).call(message);
 			}
 			catch (InterruptedException e) { 
