@@ -20,158 +20,239 @@ import bgu.spl.mics.example.messages.ExampleEvent;
  */
 public class MessageBusImpl implements MessageBus {
 
-	private static MessageBusImpl instance= null;
-	
+	private final static MessageBusImpl instance = new MessageBusImpl();
+
 	HashMap<MicroService,Queue<Message>> microServicesHashMap;
-	
 	HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> broadcastHashMap; 
-
 	HashMap<Class<? extends Event>,LinkedList<MicroService>> eventHashMap;
+	HashMap<Event<?>,Future<?>> futureHashMap;
 
-	HashMap<Event,Future> futureHashMap;
 
 	private MessageBusImpl(){
-	
-		microServicesHashMap=new HashMap<>();
+		microServicesHashMap = new HashMap<>();
 		
-		broadcastHashMap=new HashMap<>();
+		broadcastHashMap = new HashMap<>();
 		broadcastHashMap.put(PublishConferenceBroadcast.class, new LinkedList<>());
 		broadcastHashMap.put(TickBroadcast.class, new LinkedList<>());
 		
-		eventHashMap=new HashMap<>();
+		eventHashMap = new HashMap<>();
 		eventHashMap.put(PublishResultsEvent.class, new LinkedList<>());
 		eventHashMap.put(TestModelEvent.class, new LinkedList<>());
 		eventHashMap.put(TrainModelEvent.class, new LinkedList<>());
-		eventHashMap.put(ExampleEvent.class, new LinkedList<>());	
-
-			
+		eventHashMap.put(ExampleEvent.class, new LinkedList<>());
 	}
 
-	public static MessageBusImpl getInstance(){
 
-		if(instance==null)
-			instance=new MessageBusImpl();
+	public static MessageBusImpl getInstance() {
+		// if(instance==null)
+		// 	instance=new MessageBusImpl();
 
 		return instance;
-
 	}
+
 
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		
-		eventHashMap.get(type).addLast(m);
+		LinkedList<MicroService> microServices;
 
+		synchronized (eventHashMap) {
+			microServices = eventHashMap.get(type);
+		}
+
+		synchronized (microServices) {
+			microServices.addLast(m);
+		}
 	}
+
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
-		
-		broadcastHashMap.get(type).addLast(m);
-		
+		LinkedList<MicroService> ls;
+		synchronized (broadcastHashMap) {
+			ls = broadcastHashMap.get(type);
+		}
+
+		synchronized (ls) {
+			ls.addLast(m);
+		}
 	}
+
 
 	@Override
 	public <T> void complete(Event<T> e, T result) {
+		Future<T> future;
+		synchronized (futureHashMap) {
+			future = (Future<T>)futureHashMap.get(e);
+		}
 
-		Future <T> f=futureHashMap.get(e);
-		f.resolve(result);
+		future.resolve(result);
 
-		futureHashMap.remove(e);
-		
+		synchronized (futureHashMap) {
+			futureHashMap.remove(e);
+		}
 	}
+
 
 	@Override
 	public void sendBroadcast(Broadcast b) {
+		LinkedList<MicroService> ls;
+		synchronized (broadcastHashMap) {
+			ls = broadcastHashMap.get(b.getClass());
+		}
 
-		LinkedList<MicroService> ls=broadcastHashMap.get(b.getClass());
+		Queue<Message> queue;
 
-		for(MicroService m: ls)
-			microServicesHashMap.get(m).add(b);
-			//notify?
+		synchronized (ls) {
+			for(MicroService m : ls) {
+				synchronized (microServicesHashMap) {
+					queue = microServicesHashMap.get(m);
+				}
+
+				synchronized (queue) {
+					queue.add(b);
+					queue.notifyAll();
+				}
+			}
+		}
 	}
 
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
+		LinkedList<MicroService> microServices;
+
+		synchronized (eventHashMap) {
+			microServices = eventHashMap.get(e.getClass());		//choose microservice
+		}
+
+		MicroService chosenMicroService;
+
+		synchronized (microServices) {
+			if(microServices.isEmpty())
+				return null;
+
+			// TODO: make synchronized
 		
-		LinkedList<MicroService> ls=eventHashMap.get(e.getClass());		//choose microservice
-		
-		if(ls.size()==0)
-			return null;
+			chosenMicroService = microServices.removeFirst();
+			microServices.addLast(chosenMicroService);
+		}
 
-			
-		MicroService chosenMicroService=ls.getFirst();
-		ls.addLast(ls.removeFirst());
-		microServicesHashMap.get(chosenMicroService).add(e);	//adds the message to the chosen micro-service queue
+		Queue<Message> eventQueue;
+		// TODO: use a thread safe queue? so no problems happen with the get query
+		synchronized(microServicesHashMap) {
+			eventQueue = microServicesHashMap.get(chosenMicroService);
+		}
 
-		Future<T> f=new Future<T>();
-		futureHashMap.put(e, f);
+		Future<T> future = new Future<>();
+		// TODO: maybe change synchronization to be on microservice
+		synchronized (eventQueue) {
+			eventQueue.add(e);	//adds the message to the chosen micro-service Queue
+			// TODO: move the futureHashMap synchronized block out of the eventQueue block?
+			synchronized (futureHashMap) {
+				futureHashMap.put(e, future);
+			}
 
-		chosenMicroService.notify();
-		
-		return f;
-
+			eventQueue.notify();
+		}
+		// chosenMicroService.notify();
+		return future;
 	}
-
 
 
 	@Override
 	public void register(MicroService m) {
+		Queue<Message> ls = new LinkedList<Message>();
 
-		Queue<Message> ls=new LinkedList<Message>();
-		microServicesHashMap.put(m, ls);
-
+		synchronized (microServicesHashMap) {
+			microServicesHashMap.put(m, ls);
+		}
 	}
+
 
 	@Override
 	public void unregister(MicroService m) {
+		synchronized (microServicesHashMap) {
+			microServicesHashMap.remove(m);
+		}
 		
-		microServicesHashMap.remove(m);
-		
-		for(LinkedList<MicroService> ls:broadcastHashMap.values())
-			ls.remove(m);
-		
+		synchronized (broadcastHashMap) {
+			for(LinkedList<MicroService> ls : broadcastHashMap.values()) {
+				synchronized (ls) {
+					ls.remove(m);
+				}
+			}
+		}
 
+		synchronized (eventHashMap) {
+			for(LinkedList<MicroService> ls : eventHashMap.values()) {
+				synchronized (ls) {
+					ls.remove(m);
+				}
+			}
+		}
 	}
+
 
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
 		//TODO: need to check when to throw exception
-		
-		Queue<Message> ls=microServicesHashMap.get(m);
-		
-		while(ls.isEmpty()){
-		
-			
-			m.wait();
+		Queue<Message> ls;
 
+		synchronized (microServicesHashMap) {
+			ls = microServicesHashMap.get(m);
 		}
 
-		Message message=((LinkedList<Message>) ls).removeFirst();
+		Message message;
+
+		synchronized (ls) {
+			if(ls.isEmpty()){
+				// try{
+				   ls.wait();
+				// }
+			}
+
+			message = ((LinkedList<Message>) ls).removeFirst();
+		}
 
 		return message;
 	}
 
-	public boolean isRegistered(MicroService m){
 
-		return microServicesHashMap.get(m)!=null;
-
+	public boolean isRegistered(MicroService m) {
+		synchronized (microServicesHashMap) {
+			return microServicesHashMap.get(m) != null;
+		}
 	}
+
 
 	public boolean isSubscribedToBroadcast(Class<? extends Broadcast> type, MicroService m){
+		LinkedList<MicroService> ls;
 
-		if(broadcastHashMap.get(type)==null)
+		synchronized (broadcastHashMap) {
+			ls = broadcastHashMap.get(type);
+		}
+
+		if(ls == null)
 			return false;
-		return broadcastHashMap.get(type).contains(m);
 
+		synchronized (ls) {
+			return ls.contains(m);
+		}
 	}
+
 
 	public <T> boolean isSubscribedToEvent(Class<? extends Event<T>> type, MicroService m){
+		LinkedList<MicroService> ls;
 
-		if(eventHashMap.get(type)==null)
+		synchronized (eventHashMap) {
+			ls = eventHashMap.get(type);
+		}
+
+		if(ls == null)
 			return false;
-		return eventHashMap.get(type).contains(m);
-	}
 
-	
+		synchronized (ls) {
+			return ls.contains(m);
+		}
+	}
 }

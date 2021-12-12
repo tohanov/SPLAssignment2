@@ -38,7 +38,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                        <mainClass>bgu.spl.tigbur.App</mainClass>
+                        	<mainClass>bgu.spl.mics.application.CRMSRunner</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

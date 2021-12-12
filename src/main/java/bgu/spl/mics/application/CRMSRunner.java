@@ -28,7 +28,7 @@ public class CRMSRunner {
     public static void main(String[] args) {
 
 		String inputFilePath = "C:\\Users\\SB\\Desktop\\SPL\\Assignment 2\\example_input.json";
-		String outputFilePath = inputFilePath.substring(0, inputFilePath.lastIndexOf('\\')) + "output.json";
+		String outputFilePath = inputFilePath.substring(0, inputFilePath.lastIndexOf('\\') + 1) + "output.json";
 
 		// read config file
 		DeserializedJsonParser parser = deserializeConfigFile(inputFilePath); // TODO: remove debug line
@@ -50,7 +50,7 @@ public class CRMSRunner {
 		// termiate threads
 		try {
 			timeServiceThread.join();
-		} catch (Exception e) { e.printStackTrace(); }
+		} catch (Exception e) { synchronized (System.out) { e.printStackTrace(); } }
 
 		// output a json file form statistics object of cluster
 		serializeOutputFile(outputFilePath);
@@ -61,9 +61,9 @@ public class CRMSRunner {
 		// Gson gson = new Gson();
 		// JsonReader reader = new JsonReader(new FileReader(filename));
 		// List<Review> data = gson.fromJson(reader, REVIEW_TYPE); // 
-
+		Gson gson = new Gson();
 		try (Reader reader = Files.newBufferedReader(Paths.get(configFilePath))) {
-			Gson gson = new Gson();
+			
 		
 			// create a reader
 			// Reader reader = Files.newBufferedReader(Paths.get(configFilePath));
@@ -75,7 +75,7 @@ public class CRMSRunner {
 			return new DeserializedJsonParser(deserializedJson);
 		
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			synchronized (System.out) { ex.printStackTrace(); }
 		}
 
 		return null;
@@ -88,7 +88,7 @@ public class CRMSRunner {
 			writer.write(gson.toJson(Cluster.getInstance().getStatistics(), LinkedTreeMap.class));
 		}
 		catch (Exception ex) {
-			ex.printStackTrace();
+			synchronized (System.out) { ex.printStackTrace(); }
 		}
 	}
 }

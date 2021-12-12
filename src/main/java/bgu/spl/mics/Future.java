@@ -15,14 +15,13 @@ public class Future<T> {
 	T result;
 	boolean isResolved;
 	
+	
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
 	public Future() {
-		
 		result=null;
 		isResolved=false;
-
 	}
 	
 	
@@ -36,9 +35,11 @@ public class Future<T> {
      */
 	public T get() {
 		//TODO: implement this.
+		// TODO: add a synchronized block ???
 		return result;
 	}
 	
+
 	/**
      * Resolves the result of this Future object.
 	 * @post this.result=result
@@ -47,9 +48,9 @@ public class Future<T> {
 	public void resolve (T result) {
 		this.result=result;
 		isResolved=true;
-		
 	}
 	
+
 	/**
      * @return true if this object has been resolved, false otherwise
      */
@@ -58,6 +59,7 @@ public class Future<T> {
 		return isResolved;
 	}
 	
+
 	/**
      * retrieves the result the Future object holds if it has been resolved,
      * This method is non-blocking, it has a limited amount of time determined
@@ -71,7 +73,7 @@ public class Future<T> {
      */
 	public T get(long timeout, TimeUnit unit) {
 		//TODO: implement this.
-		
+		// TODO: add a timer on another thread and call regular get()
 		return null;
 	}
 
