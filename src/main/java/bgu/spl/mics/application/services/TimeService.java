@@ -31,7 +31,6 @@ public class TimeService extends MicroService{
 		for ( ; duration != 0; --duration) {
 			try { 
 				Thread.sleep(tickTime);
-				
 			} catch (Exception e) { e.printStackTrace(); }
 		}
 	}
