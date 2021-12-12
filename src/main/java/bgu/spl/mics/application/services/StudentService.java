@@ -36,7 +36,6 @@ public class StudentService extends MicroService {
 
 	
 	// region for serialization from json
-	
 	Student student;
 	LinkedList<Model> models;
 
@@ -56,6 +55,5 @@ public class StudentService extends MicroService {
 			models.addLast(new Model(model, student));
 		}
 	}
-
 	// endregion for serialization from json
 }
