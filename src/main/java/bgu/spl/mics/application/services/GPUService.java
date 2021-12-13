@@ -1,6 +1,7 @@
 package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.Event;
+import bgu.spl.mics.Message;
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TestModelEvent;
@@ -14,6 +15,7 @@ import bgu.spl.mics.application.objects.Model;
 import java.util.HashMap;
 
 import bgu.spl.mics.Broadcast;
+import bgu.spl.mics.Callback;
 /**
  * GPU service is responsible for handling the
  * {@link TrainModelEvent} and {@link TestModelEvent},
@@ -36,18 +38,22 @@ public class GPUService extends MicroService {
 	// };
 
 	// region Added
-	private static Cluster cluster;
+	// private static Cluster cluster = Cluster.getInstance();
 	// private GPU gpu;
-	private int trainingDelay;
 	// private static final HashMap<GPU.Type,int> delays = new HashMap<GPU.Type,int>() {GPU.Type.RTX3090 : 1, GPU.Type.RTX2080 : 2, GPU.Type.GTX1080 : 4};
 	// endregion Added
 
-	public GPUService(String _name, GPU _gpu) {
-		// TODO implement this
-        super(_name);
-		this.cluster = Cluster.getInstance();
-		this.gpu = _gpu;
-    }
+
+	// public GPUService(String _name, GPU _gpu) {
+	// 	// TODO implement this
+    //     super(_name);
+	// 	// this.cluster = Cluster.getInstance();
+	// 	// this.gpu = _gpu;
+
+	// 	// ticksToTrainBatch = 0; // TODO: remove?
+	// 	// training = false;
+    // }
+
 
     @Override
     protected void initialize() {
@@ -55,42 +61,16 @@ public class GPUService extends MicroService {
 		// MessageBusImpl messageBus = MessageBusImpl.getInstance();
 		// messageBus.register(this); // moved to MicroService
 
-		switch(gpu.getType()) {
-			case GTX1080:
-				trainingDelay = 4;
-				break;
-			case RTX2080:
-				trainingDelay = 2;
-				break;
-			default : // RTX3090:
-				trainingDelay = 1;
-		}
 
-		subscribeBroadcast(TickBroadcast.class, message -> {
-			if (gpu.getProcessedBatchesNum() != 0) { //gpu.getProcessedBatches().isEmpty()) {
-				--trainingDelay;
-
-				if (trainingDelay == 0) { 
-					gpu.finishTrainingBatch();
-
-					if (gpu.getProcessedBatchesNum() == 0) {
-						// TODO set Future to done
-					}
-				}
-			}
-		});
-		subscribeEvent(TrainModelEvent.class, event -> {
-			// TODO
-		});
-		subscribeEvent(TestModelEvent.class, event -> {
-			// TODO
-		});
+		subscribeBroadcast(TickBroadcast.class, message -> gpu.gotTick());
+		subscribeEvent(TrainModelEvent.class, trainModelEvent -> gpu.gotModelEvent(trainModelEvent));
+		subscribeEvent(TestModelEvent.class, trainModelEvent -> gpu.gotModelEvent(trainModelEvent));
     }
 
 
 	// region for serialization from json
 	private static int gpuCounter = 0;
-	GPU gpu;
+	private GPU gpu;
 
 	public GPUService(String _gpu) {
 		super("GPU_" + gpuCounter);
