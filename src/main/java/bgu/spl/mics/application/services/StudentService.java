@@ -55,6 +55,8 @@ public class StudentService extends MicroService {
 					if(currentModel.getResults().equals(Model.Results.Good))
 						sendEvent(new PublishResultsEvent<Model>(currentModel));
 
+					currentModelNumber++;
+
 				}
 
 				
