@@ -30,7 +30,7 @@ public abstract class MicroService implements Runnable {
     private boolean terminated = false;
     private final String name;
     private MessageBusImpl messageBus;
-    private HashMap<Class<? extends Object>, Callback<? extends Object>> callbackHashMap;
+    private HashMap<Class<? extends Message>, Callback<? extends Message>> callbackHashMap;
 	private ConcurrentLinkedQueue<Callback<Message>> callbackQueue;
 
 
@@ -71,7 +71,7 @@ public abstract class MicroService implements Runnable {
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
        messageBus.subscribeEvent(type, this);
-       callbackHashMap.put((Class<? extends Object>)type, (Callback<? extends Object>)callback);
+       callbackHashMap.put((Class<? extends Message>)type, (Callback<? extends Message>)callback);
     }
 
 
@@ -97,7 +97,7 @@ public abstract class MicroService implements Runnable {
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
         messageBus.subscribeBroadcast(type, this);
-        callbackHashMap.put((Class<? extends Object>)type, (Callback<? extends Object>)callback);
+        callbackHashMap.put((Class<? extends Message>)type, (Callback<? extends Message>)callback);
     }
 
 
@@ -187,20 +187,16 @@ public abstract class MicroService implements Runnable {
 			try {
 				Message message = messageBus.awaitMessage(this);
 				Class<? extends Message> messageClass = message.getClass();
-/*
-				if (messageClass != TickBroadcast.class) {
-					// TODO: put aside the message into an internal queue
+
+				// TODO: think if should let the services handle the last tick as well or terminate everything without that
+				((Callback<Message>)callbackHashMap.get(messageClass)).call(message);
+				
+				if (message instanceof TickBroadcast && ((TickBroadcast)message).isLast()) {
+					terminate();
 				}
-				else { // got a tick
-					if (((TickBroadcast)message).isLast()) {
-						terminate();
-					}
-					else {
-						// TODO: operate on the mesages that were put aside to the internal queue
-					}
-				}
-				*/
-				callbackHashMap.get(messageClass).call(message);
+				// else {
+				// 	((Callback<Message>)callbackHashMap.get(messageClass)).call(message);
+				// }
 			}
 			catch (InterruptedException e) { 
 				synchronized (System.out) { 
