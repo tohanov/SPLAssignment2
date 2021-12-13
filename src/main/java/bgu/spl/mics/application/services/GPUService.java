@@ -62,7 +62,7 @@ public class GPUService extends MicroService {
 		// messageBus.register(this); // moved to MicroService
 
 
-		subscribeBroadcast(TickBroadcast.class, message -> gpu.gotTick());
+		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> gpu.gotTick());
 		subscribeEvent(TrainModelEvent.class, trainModelEvent -> gpu.gotModelEvent(trainModelEvent));
 		subscribeEvent(TestModelEvent.class, trainModelEvent -> gpu.gotModelEvent(trainModelEvent));
     }

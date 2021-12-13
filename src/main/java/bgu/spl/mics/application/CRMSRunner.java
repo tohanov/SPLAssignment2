@@ -47,7 +47,7 @@ public class CRMSRunner {
 		timeServiceThread.start();
 
 		// join with TimeService
-		// termiate threads
+		// terminate threads
 		try {
 			timeServiceThread.join();
 		} catch (Exception e) { synchronized (System.out) { e.printStackTrace(); } }

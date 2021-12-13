@@ -31,8 +31,6 @@ public class CPUService extends MicroService {
     protected void initialize() {
         
         subscribeBroadcast(TickBroadcast.class,new CPU_tick_callback(cpu));
-
-
     }
 
 

@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Model;
 import bgu.spl.mics.application.objects.Student;
 /**
@@ -25,7 +26,8 @@ public class StudentService extends MicroService {
     @Override
     protected void initialize() {
         // TODO Implement this
-
+		
+		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {} );
     }
 
     public Student getStudent() {

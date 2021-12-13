@@ -142,6 +142,6 @@
         {"name": "ECCV", "date": 4000},
         {"name": "AISTATS", "date": 5000}
     ],
-    "TickTime": 50,
-    "Duration": 5500
+    "TickTime": 1000, // 50,
+    "Duration": 5 // 5500
 }
