@@ -9,14 +9,14 @@ import java.util.Map;
  */
 public class Model {
 
-	private enum Status {
+	public enum Status {
 		PreTrained, 
 		Training,
 		Trained,
 		Tested
 	}
 
-	private enum Results {
+	public enum Results {
 		None,
 		Good,
 		Bad
@@ -28,6 +28,29 @@ public class Model {
 	private Status status;
 	private Results results;
 
+	public Model(String name, Data data, Student student){
+		this.name=name;
+		this.data=data;
+		this.student=student;
+		status=Status.PreTrained;
+		results=Results.None;
+
+	}
+	public Status getStatus(){
+		return status;
+	}
+
+	public void changeStatus(Status newStatus){
+		status=newStatus;
+	}
+
+	public Results getResults(){
+		return results;
+	}
+
+	public void changeResults(Results newResult){
+		results=newResult;
+	}
 
 	// region for serialization from json
 

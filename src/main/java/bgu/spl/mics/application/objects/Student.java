@@ -1,5 +1,7 @@
 package bgu.spl.mics.application.objects;
 
+import java.util.LinkedList;
+
 /**
  * Passive object representing single student.
  * Add fields and methods to this class as you see fit (including public methods and constructors).
@@ -17,16 +19,23 @@ public class Student {
     private Degree status;
     private int publications;
     private int papersRead;
+    private Model[] models;
+    private LinkedList<Model> unpublishedModels;
+
 
 
     public int getPapersRead() {
         return papersRead;
     }
 
+    public Model[] getModels(){
+        return models;
+    }
 
+    
 	// region for serialization from json
 
-	private Model[] models;
+	
 
 	public Student(String _name, String _department, String _status) {
 

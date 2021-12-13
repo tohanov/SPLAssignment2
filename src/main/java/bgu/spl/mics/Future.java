@@ -48,13 +48,6 @@ public class Future<T> {
      * Resolves the result of this Future object.
 	 * @post this.result == _result
      */
-<<<<<<< HEAD
-	public void resolve (T result) {
-		this.result=result;
-		isResolved=true;
-		notifyAll();
-
-=======
 	public void resolve (T _result) {
 		synchronized (result) {
 			this.result = _result;
@@ -62,7 +55,6 @@ public class Future<T> {
 			// isResolved = true;
 			// isResolvedLock.notifyAll();
 		}
->>>>>>> 44e25761566cf5d78f8beba4ab83c14f9533e10e
 	}
 	
 
@@ -90,7 +82,6 @@ public class Future<T> {
      */
 	public T get(long timeout, TimeUnit unit) {
 		//TODO: implement this.
-<<<<<<< HEAD
 		// TODO: add a timer on another thread and call regular get()
 		
 		long toWait=unit.toMicros(timeout);
@@ -107,16 +98,6 @@ public class Future<T> {
 
 		return result;
 	}
-=======
-		synchronized (result) {
-			if ( ! isDone()) {
-				try {
-					result.wait(unit.toMillis(timeout));
-				}
-				catch (InterruptedException exception) { }
-			}
-		}
->>>>>>> 44e25761566cf5d78f8beba4ab83c14f9533e10e
 
 		return result; // TODO: move into synchronized body??
 	}
