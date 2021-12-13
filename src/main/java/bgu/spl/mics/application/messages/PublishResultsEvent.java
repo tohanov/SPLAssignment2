@@ -1,9 +1,10 @@
 package bgu.spl.mics.application.messages;
 
 import bgu.spl.mics.Event;
+import bgu.spl.mics.application.objects.Model;
 import bgu.spl.mics.application.objects.Student;
 
-public class PublishResultsEvent<T> implements Event<T> {
+public class PublishResultsEvent implements Event<Model> {
 
 	private Student author;
 

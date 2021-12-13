@@ -60,10 +60,9 @@ public class CRMSRunner {
 	private static DeserializedJsonParser deserializeConfigFile(String configFilePath) {
 		// Gson gson = new Gson();
 		// JsonReader reader = new JsonReader(new FileReader(filename));
-		// List<Review> data = gson.fromJson(reader, REVIEW_TYPE); // 
-		Gson gson = new Gson();
+		// List<Review> data = gson.fromJson(reader, REVIEW_TYPE); //
 		try (Reader reader = Files.newBufferedReader(Paths.get(configFilePath))) {
-			
+			Gson gson = new Gson();
 		
 			// create a reader
 			// Reader reader = Files.newBufferedReader(Paths.get(configFilePath));
