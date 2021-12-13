@@ -12,16 +12,18 @@ import java.util.concurrent.TimeUnit;
  */
 public class Future<T> {
 
-	T result;
-	boolean isResolved;
+	private T result;
+	// private boolean isResolved;
+	// private Object isResolvedLock;
 	
-	
+
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
 	public Future() {
-		result=null;
-		isResolved=false;
+		result = null;
+		// isResolved = false;
+		// isResolvedLock = new Object();
 	}
 	
 	
@@ -35,19 +37,23 @@ public class Future<T> {
      */
 	public T get() {
 		//TODO: implement this.
-		// TODO: add a synchronized block ???
-		return result;
+
+		// waiting without timeout
+		return get(0, TimeUnit.MILLISECONDS);
 	}
 	
 
 	/**
      * Resolves the result of this Future object.
-	 * @post this.result=result
-	 * @post isResolved=true
+	 * @post this.result == _result
      */
-	public void resolve (T result) {
-		this.result=result;
-		isResolved=true;
+	public void resolve (T _result) {
+		synchronized (result) {
+			this.result = _result;
+			this.result.notifyAll();
+			// isResolved = true;
+			// isResolvedLock.notifyAll();
+		}
 	}
 	
 
@@ -56,7 +62,9 @@ public class Future<T> {
      */
 	public boolean isDone() {
 		//TODO: implement this.
-		return isResolved;
+		synchronized (result) {
+			return result != null;
+		}
 	}
 	
 
@@ -73,8 +81,15 @@ public class Future<T> {
      */
 	public T get(long timeout, TimeUnit unit) {
 		//TODO: implement this.
-		// TODO: add a timer on another thread and call regular get()
-		return null;
-	}
+		synchronized (result) {
+			if ( ! isDone()) {
+				try {
+					result.wait(unit.toMillis(timeout));
+				}
+				catch (InterruptedException exception) { }
+			}
+		}
 
+		return result; // TODO: move into synchronized body??
+	}
 }
