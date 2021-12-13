@@ -1,5 +1,6 @@
 package bgu.spl.mics;
 
+import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,6 +49,8 @@ public class Future<T> {
 	public void resolve (T result) {
 		this.result=result;
 		isResolved=true;
+		notifyAll();
+
 	}
 	
 
@@ -74,7 +77,20 @@ public class Future<T> {
 	public T get(long timeout, TimeUnit unit) {
 		//TODO: implement this.
 		// TODO: add a timer on another thread and call regular get()
-		return null;
+		
+		long toWait=unit.toMicros(timeout);
+		
+		if(isResolved)
+			return result;
+		
+		try {
+			wait(toWait);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return result;
 	}
 
 }
