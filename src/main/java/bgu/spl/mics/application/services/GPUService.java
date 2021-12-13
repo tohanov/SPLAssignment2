@@ -81,6 +81,8 @@ public class GPUService extends MicroService {
 		});
 		subscribeEvent(TrainModelEvent.class, event -> {
 			// TODO
+
+			
 		});
 		subscribeEvent(TestModelEvent.class, event -> {
 			// TODO
