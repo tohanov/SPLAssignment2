@@ -69,7 +69,7 @@ public class Cluster {
 	public void registerCPU(CPU cpu) {
 		synchronized(CPUS) {
 			CPUS.add(cpu);
-			availableCPUS[Math.log(cpu.getCores(), 2)].addLast(cpu); // TODO: index
+			availableCPUS[(int) (Math.log(cpu.getCores()) /Math.log(2.0))].addLast(cpu);
 		}
 	}
 
