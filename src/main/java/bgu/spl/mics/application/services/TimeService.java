@@ -39,20 +39,31 @@ public class TimeService extends MicroService {
 		MessageBusImpl messageBus = MessageBusImpl.getInstance();
 
 		try {
-			for ( ; duration != 1; --duration) {
+			// for ( ; duration > 1; --duration) {
+			for (int i = 1; i < duration; ++i) {
 				Thread.sleep(tickTime);
 				messageBus.sendBroadcast(tick);
+
+				// TODO: remove debug block
+				synchronized (System.out) {
+					System.out.println("[*] Timeservice: sent tick " + i);
+				}
 			}
 
 			Thread.sleep(tickTime);
 			messageBus.sendBroadcast(new TickBroadcast(true));
+
+			// TODO: remove debug block
+			synchronized (System.out) {
+				System.out.println("[*] Timeservice: sent the LAST tick (" + duration + ")");
+			}
 		}
 		catch (Exception e) { 
 			synchronized (System.out) {
 				e.printStackTrace(); 
 			} 
 		}
-
+		
 		terminate(); // not entering the run() loop
 	}
 }

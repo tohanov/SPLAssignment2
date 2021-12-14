@@ -3,7 +3,7 @@ package bgu.spl.mics.application.messages;
 import bgu.spl.mics.Event;
 import bgu.spl.mics.application.objects.Model;
 
-public class PublishResultsEvent<T> implements Event<T> {
+public class PublishResultsEvent implements Event<Model> {
 
 	private Model modelsToPublish;
 
@@ -14,5 +14,4 @@ public class PublishResultsEvent<T> implements Event<T> {
 	public Model getModelsToPublish() {
 		return modelsToPublish;
 	}
-    
 }

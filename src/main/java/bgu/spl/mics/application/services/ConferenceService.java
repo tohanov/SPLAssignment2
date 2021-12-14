@@ -3,6 +3,7 @@ package bgu.spl.mics.application.services;
 import java.util.Map;
 
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.TickBroadcast;
 
 /**
  * Conference service is in charge of
@@ -23,6 +24,7 @@ public class ConferenceService extends MicroService {
     protected void initialize() {
         // TODO Implement this
 
+		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {} );
     }
 
     public String[] getNamesOfSuccessfulModels() {
@@ -34,7 +36,7 @@ public class ConferenceService extends MicroService {
 	private int date;
 
 	public ConferenceService(Map<String,Object> _conference) {
-        super((String)_conference.get("name"));
+        super("Conference_" + (String)_conference.get("name"));
         
 		date = ((Double)_conference.get("date")).intValue();
     }

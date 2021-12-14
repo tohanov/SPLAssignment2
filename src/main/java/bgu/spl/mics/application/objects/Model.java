@@ -52,8 +52,9 @@ public class Model {
 		results=newResult;
 	}
 
+	
+	
 	// region for serialization from json
-
 	public Model(String _name, String _dataType, int _size, Student _student) {
 		name = _name;
 		data = new Data( Data.typeFromString(_dataType), _size );
@@ -66,6 +67,5 @@ public class Model {
 	public Model(Map<String,Object> _model, Student _student) {
 		this((String)_model.get("name"), (String)_model.get("type"), ((Double)_model.get("size")).intValue(), _student);
 	}
-
 	// endregion for serialization from json
 }

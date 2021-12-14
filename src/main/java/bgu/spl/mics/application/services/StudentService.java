@@ -37,9 +37,9 @@ public class StudentService extends MicroService {
     protected void initialize() {
        subscribeBroadcast(TickBroadcast.class, message->{
 			
-			if(currentModelNumber<student.getModels().length){
+			if(currentModelNumber<student.getModels().size()){
 				
-				Model currentModel=student.getModels()[currentModelNumber];
+				Model currentModel=student.getModels().get(currentModelNumber);
 
 				if(currentModel.getStatus().equals(Model.Status.PreTrained)){
 					currentModel.changeStatus(Model.Status.Training);
@@ -53,7 +53,7 @@ public class StudentService extends MicroService {
 					currentModel=f.get();
 
 					if(currentModel.getResults().equals(Model.Results.Good))
-						sendEvent(new PublishResultsEvent<Model>(currentModel));
+						sendEvent(new PublishResultsEvent(currentModel));
 
 					currentModelNumber++;
 
@@ -89,7 +89,7 @@ public class StudentService extends MicroService {
 	
 	// region for serialization from json
 	Student student;
-	LinkedList<Model> models;
+	ArrayList<Model> models;
 
 	public StudentService(Map<String,Object> _student) {
 		super((String)_student.get("name"));
@@ -101,10 +101,10 @@ public class StudentService extends MicroService {
 		);
 
 		ArrayList<Map> _models = (ArrayList<Map>)_student.get("models");
-		models = new LinkedList<>();
+		models = new ArrayList<>();
 		
 		for (Map model : _models)	{
-			models.addLast(new Model(model, student));
+			models.add(models.size(), new Model(model, student));
 		}
 	}
 	// endregion for serialization from json

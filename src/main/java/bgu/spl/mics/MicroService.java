@@ -178,7 +178,7 @@ public abstract class MicroService implements Runnable {
 		
 		// TODO: remove this debug block
 		synchronized (System.out) {
-			System.out.println(name + " has started :)"); 
+			System.out.println("[*] " + name + ": has started"); 
 		}
 
         initialize();
@@ -192,6 +192,12 @@ public abstract class MicroService implements Runnable {
 				((Callback<Message>)callbackHashMap.get(messageClass)).call(message);
 				
 				if (message instanceof TickBroadcast && ((TickBroadcast)message).isLast()) {
+
+					// TODO: remove debug block
+					synchronized (System.out) {
+						System.out.println("[*] " + name + ": got LAST tick");
+					}
+
 					terminate();
 				}
 				// else {
