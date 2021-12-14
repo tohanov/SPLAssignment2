@@ -1,7 +1,6 @@
 package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.MicroService;
-import bgu.spl.mics.Callbacks.CPU_tick_callback;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.CPU;
 import bgu.spl.mics.application.objects.Cluster;
@@ -30,7 +29,27 @@ public class CPUService extends MicroService {
     @Override
     protected void initialize() {
         
-        subscribeBroadcast(TickBroadcast.class,new CPU_tick_callback(cpu));
+        subscribeBroadcast(TickBroadcast.class, (message)->{
+
+            if(!cpu.isEmpty()){
+            
+                cpu.process();
+    
+                if(cpu.isCurrentBatchReady()){
+                    DataBatch readyBatch=cpu.removeBatch();
+    
+                    //TODO: implementation of sending back to cluster
+                
+                }
+                
+            }
+
+            if (message==new TickBroadcast(true))
+                terminate();
+
+        });
+
+
     }
 
 

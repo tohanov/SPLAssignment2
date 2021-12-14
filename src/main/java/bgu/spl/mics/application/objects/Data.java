@@ -15,6 +15,7 @@ public class Data {
 
     private Type type;
     private int processed;
+	private int trained;
     private int size;
 
 
@@ -46,7 +47,7 @@ public class Data {
 
     public boolean isProcessed(){
 
-        return processed==size;
+        return processed == size;
     }
 
     public void increaseNumOfProcessedSamples(int number_of_processed_samples_to_add){
@@ -56,6 +57,12 @@ public class Data {
         if(processed>size)
             processed=size;
 
+    }
+
+
+	public boolean isTrained(){
+
+        return processed == size;
     }
 
 

@@ -3,6 +3,7 @@ package bgu.spl.mics.application.objects;
 import java.util.Collection;
 import java.util.LinkedList;
 
+import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Data.Type;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -13,13 +14,22 @@ import java.util.LinkedList;
  * Add fields and methods to this class as you see fit (including public methods and constructors).
  */
 public class CPU {
+
     private int cores;
-    private Collection<DataBatch> dataBatch;
+    private Collection<DataBatch> data;
     private Cluster cluster;
+	// private static int[] processing = calcProcessingTicks();
+
+	// private static int[] calcProcessingTicks() {
+	// 	int[] arr = new int[18];
+	// 	for () { 
+
+	// 	}
+	// }
 
      public CPU(int cores,Cluster cluster){
         this.cores=cores;
-        this.dataBatch=new LinkedList<>();
+        this.data=new LinkedList<>();
         this.cluster=cluster;
 
      }
@@ -49,32 +59,32 @@ public class CPU {
      * 
      * @param toAdd The batch to add
      * @pre toAdd!=null
-     * @post dataBatch.last()=toAdd
+     * @post data.last()=toAdd
      */
     public void addBatch(DataBatch toAdd){
-        this.dataBatch.add(toAdd);
+        this.data.add(toAdd);
 
     }
 
     /**
-     * @post dataBatch.size=@pre databatch.size()-1
+     * @post data.size=@pre databatch.size()-1
      */
     public DataBatch removeBatch(){
-        return ((LinkedList<DataBatch>) dataBatch).removeFirst();
+        return ((LinkedList<DataBatch>) data).removeFirst();
     }
 
-    
-
-    /**
 
 	/**
-     * @pre  dataBatch.getFirst().getData().getData().processed <  dataBatch.getFirst().getData().size
-     * @post dataBatch.getData().processed= @pre dataBatch.getData().processed + 1000 / calculateProcessingTime(dataType) 
+     * @pre  data.getFirst().getData().getData().processed <  data.getFirst().getData().size
+     * @post data.getData().processed= @pre data.getData().processed + 1000 / calculateProcessingTime(dataType) 
      */
     public void process(){
 
-        int toAdd=1000/calculateProcessingTime(((LinkedList<DataBatch>) dataBatch).getFirst().getData().getType());
-        ((LinkedList<DataBatch>) dataBatch).getFirst().getData().increaseNumOfProcessedSamples(toAdd);
+        // int toAdd=1000/calculateProcessingTime(((LinkedList<DataBatch>) data).getFirst().getData().getType());
+		// if (1000 % calculateProcessingTime(((LinkedList<DataBatch>) data).getFirst().getData().getType()) != 0)
+		// 	++toAdd;
+        // ((LinkedList<DataBatch>) data).getFirst().getData().increaseNumOfProcessedSamples(toAdd);
+		data.process();
     }
 
 
@@ -82,22 +92,42 @@ public class CPU {
 	 * @return True if CPU is ready for batches, False otherwise
 	 */
     public boolean isEmpty(){
-        return dataBatch.isEmpty();
+        return data.isEmpty();
     }
 
     public boolean isCurrentBatchReady(){
-        return ((LinkedList<DataBatch>) dataBatch).getFirst().isFirstBatchProcessed();
+        return ((LinkedList<DataBatch>) data).getFirst().isFirstBatchProcessed();
     }
+
+
+	public int getCores() {
+		return cores;
+	}
 
 
 	// region for serialization from json
 	public CPU(int _cores) {
 		cores = _cores;
-        dataBatch = new LinkedList<>(); // TODO: make thread-safe?
+        data = new LinkedList<>(); // TODO: make thread-safe?
         cluster = Cluster.getInstance();
 	}
 	// endregion for serialization from json
 
 
+	public void tickCallback() {
+		if(! isEmpty()) {
+			DataBatch batch = ((LinkedList<DataBatch>)data).peek();
+
+			if (batch.getIsFresh()) {
+				batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
+			}
+
+			if(batch.process()){
+				removeBatch();
+				cluster.sendProcessedBatchToTraining(batch);
+			}
+			
+		}
+	}
 
 }

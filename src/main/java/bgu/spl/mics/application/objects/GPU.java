@@ -44,10 +44,12 @@ public class GPU {
 	private Queue<Event<Model>> modelEventsQueue;
 	private final int trainingDelay; // according to the type of the gpu
 	private final byte vRAM; // according to the type of the gpu
+	private byte empyVRAM;
 	private int storedProcessedBatchesNumber;
-	private int ticksToTrainBatch;
-	private boolean training;
-	private boolean testing;
+	// private int ticksToTrainBatch;
+	// private boolean training;
+	// private boolean testing;
+	private Queue<DataBatch> processBatches;
 	// endregion Added fields
 
 	/**
@@ -77,32 +79,6 @@ public class GPU {
     // }
 
 
-	/**
-     * @return The type of the GPU
-     */
-    // public Type getType () {
-    //     return type;
-    // }
-
-
-	// public void runService() { // TODO remove ?
-	// 	service.run();
-	// }
-
-
-	/**
-	 * @return Reference to the corresponding GPUService
-	 */
-	// public GPUService getService() {
-	// 	return service;
-	// }
-
-
-	// public Collection<DataBatch> getProcessedBatches() {
-	// 	return processedBatches;
-	// }
-
-
 	// region for serialization from json
 	public GPU(String _type) {
         this.type = typeFromString(_type);
@@ -124,6 +100,7 @@ public class GPU {
 		}
 
 		modelEventsQueue = new ArrayDeque<>();
+		processBatches = new ArrayDeque<>();
     }
 
 
@@ -144,37 +121,15 @@ public class GPU {
 
 
 	public void gotTick() {
-		// TODO: treat the case of last tick??
 
-		// TODO: split to smaller functions (queries + actions)
-		if (training) { // && storedProcessedBatchesNumber != 0) {
-			--ticksToTrainBatch;
+		// if (modelEventsQueue.peek() instanceof TrainModelEvent) {
 			
-			if (ticksToTrainBatch == 0) { // if finished training batch
-				ticksToTrainBatch = trainingDelay; // reset the counter
-				finishTrainingBatch();	// 
-
-				if (storedProcessedBatchesNumber == 0) {
-					training = false; // TODO: maybe incorrect since someone could tell me to test a model while i haven't gotten all the batches from cpu yet
-					// TODO set Future to done / send more batches to cpu for processing
-				}
-			}
-		}
-		else if (testing) {
-			// TODO
-		}
-		// else if (storedProcessedBatchesNumber != 0) {
-		// 	training = true;
-		// 	--ticksToTrainBatch;
-
-		// 	if (trainingDelay == 0) { 
-		// 		gpu.finishTrainingBatch();
-
-		// 		if (gpu.getProcessedBatchesNum() == 0) {
-		// 			// TODO set Future to done
-		// 		}
-		// 	}
 		// }
+
+
+		// // TODO: treat the case of last tick??
+
+		// // TODO: split to smaller functions (queries + actions)
 	}
 
 
@@ -184,31 +139,21 @@ public class GPU {
 	}
 
 
-	// public void gotModelToTest(TestModelEvent testModelEvent) {
-	// 	// TODO: put aside to wait for ticks
-	// }
-
-
-	/**
-	 * @return The amount of vRAM the GPU has
-	 */
-	// public byte getVRAM() {
-	// 	return vRAM;
-	// }
-
-	
-	/**
-	 * @return Number of processed batches currently in training
-	 */
-	// public int getProcessedBatchesNum() {
-	// 	return storedProcessedBatchesNumber;
-	// }
-
-
 	/**
 	 * @inv processedBatchesNum >= 0
 	 */
 	public void finishTrainingBatch() {
 		--storedProcessedBatchesNumber;
+	}
+
+
+	// private void sendNextBatches() {
+	// 	DataBatch dataBatch;
+	// 	cluster.sendBatchesForProcessing(this, dataBatch);
+	// }
+
+
+	public void returnProcessedBatch(DataBatch batch) {
+		processBatches.add(batch);
 	}
 }
