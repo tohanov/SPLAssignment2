@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.objects;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
@@ -19,16 +20,40 @@ public class Student {
     private Degree status;
     private int publications;
     private int papersRead;
-    private Model[] models;
-    private LinkedList<Model> unpublishedModels;
+    private ArrayList<Model> models;
+    
+    public Student(String name, String department, Degree status, ArrayList<Model> models){
+        this.name=name;
+        this.department=department;
+        this.status=status;
+        this.models=models;     // the models should belong to the student and not to the studentService
+        publications=0;
+        papersRead=0;
 
 
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    public String getDepartment(){
+        return department;
+    }
+
+    public Degree getStatus(){
+        return status;
+    }
+
+    public int getPublications(){
+        return publications;
+    }
 
     public int getPapersRead() {
         return papersRead;
     }
 
-    public Model[] getModels(){
+    public ArrayList<Model> getModels(){
         return models;
     }
 
