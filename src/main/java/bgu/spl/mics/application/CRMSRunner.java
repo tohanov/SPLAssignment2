@@ -50,7 +50,10 @@ public class CRMSRunner {
 		// terminate threads
 		try {
 			timeServiceThread.join();
-		} catch (Exception e) { synchronized (System.out) { e.printStackTrace(); } }
+		}
+		catch (InterruptedException e) { 
+			synchronizedPrintStackTrace(e); 
+		}
 
 		// output a json file form statistics object of cluster
 		serializeOutputFile(outputFilePath);
@@ -58,23 +61,12 @@ public class CRMSRunner {
 
 
 	private static DeserializedJsonParser deserializeConfigFile(String configFilePath) {
-		// Gson gson = new Gson();
-		// JsonReader reader = new JsonReader(new FileReader(filename));
-		// List<Review> data = gson.fromJson(reader, REVIEW_TYPE); //
+		
 		try (Reader reader = Files.newBufferedReader(Paths.get(configFilePath))) {
-			Gson gson = new Gson();
-		
-			// create a reader
-			// Reader reader = Files.newBufferedReader(Paths.get(configFilePath));
-		
-			// convert JSON string to Useclr object
-			LinkedTreeMap deserializedJson = gson.fromJson(reader, LinkedTreeMap.class);
-			// System.out.println(deserializedJson); // TODO: remove debug line
-
-			return new DeserializedJsonParser(deserializedJson);
-		
-		} catch (Exception ex) {
-			synchronized (System.out) { ex.printStackTrace(); }
+			return new DeserializedJsonParser( new Gson().fromJson(reader, LinkedTreeMap.class) );
+		}
+		catch (Exception ex) {
+			synchronizedPrintStackTrace(ex); // TODO: remove??
 		}
 
 		return null;
@@ -82,12 +74,17 @@ public class CRMSRunner {
 
 	private static void serializeOutputFile(String outputFilePath) {
 		// TODO: output a json file form statistics object of cluster
+
 		try (Writer writer = Files.newBufferedWriter(Paths.get(outputFilePath))) {
-			Gson gson = new Gson();
-			writer.write(gson.toJson(Cluster.getInstance().getStatistics(), LinkedTreeMap.class));
+			writer.write(new Gson().toJson( Cluster.getInstance().getStatistics(), LinkedTreeMap.class) );
 		}
 		catch (Exception ex) {
-			synchronized (System.out) { ex.printStackTrace(); }
-		}
+			synchronizedPrintStackTrace(ex); 
+		} // TODO: remove??
+	}
+
+
+	public static void synchronizedPrintStackTrace(Exception exception) {
+		synchronized (System.out) { exception.printStackTrace(); }
 	}
 }

@@ -15,5 +15,4 @@ public class PublishResultsEvent implements Event<Model> {
 	public Student getAuthor() {
 		return author;
 	}
-    
 }

@@ -26,8 +26,8 @@ public class MessageBusImpl implements MessageBus {
 	
 	HashMap<MicroService,Queue<Message>> microServicesHashMap;
 	HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> broadcastHashMap; 
-	HashMap<Class<? extends Event>,LinkedList<MicroService>> eventHashMap;
-	HashMap<Event<?>,Future<?>> futureHashMap;
+	HashMap<Class<? extends Message>,LinkedList<MicroService>> eventHashMap;
+	HashMap<Event<? extends Object>,Future<? extends Object>> futureHashMap;
 
 
 	private MessageBusImpl(){
@@ -84,14 +84,14 @@ public class MessageBusImpl implements MessageBus {
 	public <T> void complete(Event<T> e, T result) {
 		Future<T> future;
 		synchronized (futureHashMap) {
-			future = (Future<T>)futureHashMap.get(e);
+			future = (Future<T>)futureHashMap.remove(e);
 		}
 
 		future.resolve(result);
 
-		synchronized (futureHashMap) {
-			futureHashMap.remove(e);
-		}
+		// synchronized (futureHashMap) {
+		// 	futureHashMap.remove(e);
+		// }
 	}
 
 
@@ -154,7 +154,7 @@ public class MessageBusImpl implements MessageBus {
 				futureHashMap.put(e, future);
 			}
 
-			eventQueue.notify();
+			eventQueue.notify(); // only one thread waiting for events on each queue
 		}
 		// chosenMicroService.notify();
 		return future;
@@ -177,7 +177,7 @@ public class MessageBusImpl implements MessageBus {
 			microServicesHashMap.remove(m);
 		}
 		
-		synchronized (broadcastHashMap) {
+		synchronized (broadcastHashMap) { // TODO: use fast fail iterator functionality??
 			for(LinkedList<MicroService> ls : broadcastHashMap.values()) {
 				synchronized (ls) {
 					ls.remove(m);
@@ -207,7 +207,7 @@ public class MessageBusImpl implements MessageBus {
 		Message message;
 
 		synchronized (ls) {
-			if(ls.isEmpty()){
+			if(ls.isEmpty()) {
 				// try{
 				   ls.wait();
 				// }
