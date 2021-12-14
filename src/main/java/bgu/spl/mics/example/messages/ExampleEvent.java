@@ -10,7 +10,14 @@ public class ExampleEvent implements Event<String>{
         this.senderName = senderName;
     }
 
+    @Override
+    public String getValue() {
+        return null;
+    }
+
     public String getSenderName() {
         return senderName;
     }
+
+    
 }

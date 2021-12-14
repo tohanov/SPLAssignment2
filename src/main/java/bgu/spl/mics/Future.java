@@ -1,6 +1,5 @@
 package bgu.spl.mics;
 
-import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -16,7 +15,7 @@ public class Future<T> {
 	private T result;
 	// private boolean isResolved;
 	// private Object isResolvedLock;
-	
+	private Object resultLock;
 
 	/**
 	 * This should be the the only public constructor in this class.
@@ -25,6 +24,7 @@ public class Future<T> {
 		result = null;
 		// isResolved = false;
 		// isResolvedLock = new Object();
+		resultLock=new Object();
 	}
 	
 	
@@ -49,9 +49,9 @@ public class Future<T> {
 	 * @post this.result == _result
      */
 	public void resolve (T _result) {
-		synchronized (result) {
+		synchronized (resultLock) {
 			this.result = _result;
-			this.result.notifyAll();
+			resultLock.notifyAll();
 			// isResolved = true;
 			// isResolvedLock.notifyAll();
 		}
@@ -63,7 +63,7 @@ public class Future<T> {
      */
 	public boolean isDone() {
 		//TODO: implement this.
-		synchronized (result) {
+		synchronized (resultLock) {
 			return result != null;
 		}
 	}
@@ -82,22 +82,14 @@ public class Future<T> {
      */
 	public T get(long timeout, TimeUnit unit) {
 		//TODO: implement this.
-		// TODO: add a timer on another thread and call regular get()
-		
-		long toWait=unit.toMicros(timeout);
-		
-		if(isResolved)
-			return result;
-		
-		try {
-			wait(toWait);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		synchronized (resultLock) {
+			if ( ! isDone()) {
+				try {
+					resultLock.wait(unit.toMillis(timeout));
+				}
+				catch (InterruptedException exception) { }
+			}
 		}
-
-		return result;
-	}
 
 		return result; // TODO: move into synchronized body??
 	}

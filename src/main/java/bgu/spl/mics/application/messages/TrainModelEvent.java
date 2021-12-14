@@ -3,7 +3,7 @@ package bgu.spl.mics.application.messages;
 import bgu.spl.mics.Event;
 import bgu.spl.mics.application.objects.Model;
 
-public class TrainModelEvent<T> implements Event<T>{
+public class TrainModelEvent implements Event<Model>{
 
     Model model;
 
@@ -12,7 +12,7 @@ public class TrainModelEvent<T> implements Event<T>{
 
     }
 
-    public Model getModel(){
+    public Model getValue(){
 
         return model;
     }

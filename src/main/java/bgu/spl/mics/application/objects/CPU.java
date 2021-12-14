@@ -79,12 +79,12 @@ public class CPU {
      * @post data.getData().processed= @pre data.getData().processed + 1000 / calculateProcessingTime(dataType) 
      */
     public void process(){
+        if(!((LinkedList<DataBatch>) data).isEmpty()){
+                ((LinkedList<DataBatch>) data).peekFirst().process();
 
-        // int toAdd=1000/calculateProcessingTime(((LinkedList<DataBatch>) data).getFirst().getData().getType());
-		// if (1000 % calculateProcessingTime(((LinkedList<DataBatch>) data).getFirst().getData().getType()) != 0)
-		// 	++toAdd;
-        // ((LinkedList<DataBatch>) data).getFirst().getData().increaseNumOfProcessedSamples(toAdd);
-		data.process();
+                if(isCurrentBatchReady())
+                cluster.sendProcessedBatchToTraining(((LinkedList<DataBatch>) data).pollFirst());
+        }
     }
 
 
@@ -115,10 +115,18 @@ public class CPU {
 
 
 	public void tickCallback() {
-		if(! isEmpty()) {
+		
+        // if(isEmpty()){
+        //     DataBatch batch=cluster.getBatchToProcess();
+
+
+        // }
+        
+        
+        if(! isEmpty()) {
 			DataBatch batch = ((LinkedList<DataBatch>)data).peek();
 
-			if (batch.getIsFresh()) {
+			if (batch.isInProcessing()) {
 				batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
 			}
 
@@ -129,5 +137,9 @@ public class CPU {
 			
 		}
 	}
+
+    public Cluster getCluster(){
+        return cluster;
+    }
 
 }

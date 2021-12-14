@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
 
@@ -27,6 +28,7 @@ public class Cluster {
 	// region According to instructions
 	private Collection<GPU> GPUS;
 	private Collection<CPU> CPUS;
+	private HashMap<GPU,LinkedList<DataBatch>> databatchQueues;
 	// TODO add statistics
 	private LinkedTreeMap<String,Object> Statistics = new LinkedTreeMap<>();
 	// endregion According to instructions
@@ -48,11 +50,16 @@ public class Cluster {
 	private Cluster() {
 		GPUS = new ArrayList<>();
 		CPUS = new ArrayList<>();
+		
+		
+		//TODO: check if needed
 		availableCPUS = new LinkedList[6];
 
 		for (int i = 0; i < 6; ++i) {
 			availableCPUS[i] = new LinkedList<>();
 		}
+
+
 	}
 
 
@@ -77,6 +84,7 @@ public class Cluster {
 	public void registerGPU(GPU gpu) {
 		synchronized(GPUS) {
 			GPUS.add(gpu);
+			databatchQueues.put(gpu, new LinkedList<DataBatch>());
 		}
 	}
 
@@ -130,12 +138,20 @@ public class Cluster {
 	// TODO: implement sending multiple batches at once, according to available vRam
 	// and let cluster handle assigning them
 	public void sendProcessedBatchToTraining(DataBatch dataBatch) {
-		
+		GPU destinationGPU=dataBatch.getOwnerGPU();
+		destinationGPU.addTovRAM(dataBatch);
 	}
 
 
+	/*public LinkedList<DataBatch> getBatchToProcess() {
+		for(LinkedList)
+		
+	}*/
+	
 	// for json output
 	public LinkedTreeMap<String,Object> getStatistics() {
 		return null; // TODO: change to something working
 	}
+
+	
 }

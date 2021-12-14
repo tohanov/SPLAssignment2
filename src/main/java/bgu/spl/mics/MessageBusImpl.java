@@ -42,6 +42,8 @@ public class MessageBusImpl implements MessageBus {
 		eventHashMap.put(TestModelEvent.class, new LinkedList<>());
 		eventHashMap.put(TrainModelEvent.class, new LinkedList<>());
 		eventHashMap.put(ExampleEvent.class, new LinkedList<>());
+
+		futureHashMap=new HashMap<>();
 	}
 
 

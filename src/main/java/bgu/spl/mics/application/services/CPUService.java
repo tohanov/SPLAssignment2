@@ -30,25 +30,8 @@ public class CPUService extends MicroService {
     protected void initialize() {
         
         subscribeBroadcast(TickBroadcast.class, (message)->{
-
-            if(!cpu.isEmpty()){
-            
-                cpu.process();
-    
-                if(cpu.isCurrentBatchReady()){
-                    DataBatch readyBatch=cpu.removeBatch();
-    
-                    //TODO: implementation of sending back to cluster
-                
-                }
-                
-            }
-
-            if (message==new TickBroadcast(true))
-                terminate();
-
+            cpu.process();
         });
-
 
     }
 

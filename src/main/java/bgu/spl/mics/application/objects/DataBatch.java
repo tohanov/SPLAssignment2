@@ -14,18 +14,25 @@ public class DataBatch {
 	// private int processed_index;
 	// private int end_index;
 	private int processingTickCount;
-	private boolean isFresh;
+	private int trainingTickCount;
+	private boolean inProcessing;
+	private boolean inTraining;
 
     public DataBatch(Data data, int start_index, GPU _ownerGpu){
         this.data=data;
         this.start_index=start_index;
 		this.ownerGpu = _ownerGpu;
-		isFresh = true;
+		inProcessing = true;
+		
     }
 
 
 	public void setStartProcessing(int tickCount) {
 		processingTickCount = tickCount;
+	}
+
+	public void setStartTraining(int tickCount) {
+		trainingTickCount = tickCount;
 	}
 
 
@@ -45,18 +52,20 @@ public class DataBatch {
 
 
 	public boolean process() {
-    //     processed+=number_of_processed_samples_to_add;
-
-    // // extreme case    
-    //     if(processed>size)
-    //         processed=size;
-
-		return --processingTickCount == 0;
+   		return --processingTickCount == 0;
     }
 
+	public boolean train() {
+		return --trainingTickCount == 0;
+	}
+	
 
-	public boolean getIsFresh() {
-		return isFresh;
+	public boolean isInProcessing() {
+		return inProcessing;
+	}
+
+	public boolean isInTraining(){
+		return inTraining;
 	}
 
 }

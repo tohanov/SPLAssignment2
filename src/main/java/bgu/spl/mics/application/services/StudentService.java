@@ -37,19 +37,19 @@ public class StudentService extends MicroService {
     protected void initialize() {
        subscribeBroadcast(TickBroadcast.class, message->{
 			
-			if(currentModelNumber<student.getModels().size()){
+			if(currentModelNumber<models.size()){
 				
-				Model currentModel=student.getModels().get(currentModelNumber);
+				Model currentModel=models.get(currentModelNumber);
 
 				if(currentModel.getStatus().equals(Model.Status.PreTrained)){
 					currentModel.changeStatus(Model.Status.Training);
-					Future<Model> f=sendEvent(new TrainModelEvent<Model>(currentModel));
+					Future<Model> f=sendEvent(new TrainModelEvent(currentModel));
 					currentModel=f.get();
 					
 				}
 
 				else if(currentModel.getStatus().equals(Model.Status.Trained)){
-					Future<Model> f=sendEvent(new TestModelEvent<>(currentModel));
+					Future<Model> f=sendEvent(new TestModelEvent(currentModel));
 					currentModel=f.get();
 
 					if(currentModel.getResults().equals(Model.Results.Good))

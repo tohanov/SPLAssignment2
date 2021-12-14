@@ -5,13 +5,13 @@ import bgu.spl.mics.application.objects.Model;
 
 public class PublishResultsEvent implements Event<Model> {
 
-	private Model modelsToPublish;
+	private Model modelToPublish;
 
 	public PublishResultsEvent(Model modelToPublish) {
-		this.modelsToPublish=modelsToPublish;
+		this.modelToPublish=modelToPublish;
 	}
 
-	public Model getModelsToPublish() {
-		return modelsToPublish;
+	public Model getValue() {
+		return modelToPublish;
 	}
 }

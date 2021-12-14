@@ -52,7 +52,13 @@ public class Model {
 		results=newResult;
 	}
 
-	
+	public Data getData(){
+		return data;
+	}
+
+	public Student getStudent(){
+		return student;
+	}
 	
 	// region for serialization from json
 	public Model(String _name, String _dataType, int _size, Student _student) {

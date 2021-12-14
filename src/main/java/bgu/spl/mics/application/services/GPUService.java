@@ -2,6 +2,7 @@ package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.Event;
 import bgu.spl.mics.Message;
+import bgu.spl.mics.MessageBus;
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TestModelEvent;
@@ -11,6 +12,7 @@ import bgu.spl.mics.application.objects.Cluster;
 import bgu.spl.mics.application.objects.Data;
 import bgu.spl.mics.application.objects.GPU;
 import bgu.spl.mics.application.objects.Model;
+import bgu.spl.mics.application.objects.Student;
 
 import java.util.HashMap;
 
@@ -62,9 +64,38 @@ public class GPUService extends MicroService {
 		// messageBus.register(this); // moved to MicroService
 
 
-		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> gpu.gotTick());
+		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> { 
+			Event<Model> handledEvent = gpu.actOnTick();
+			if(handledEvent != null) {
+				// Event<Model> lastEvent=gpu.getLastEvent();
+				MessageBusImpl.getInstance().complete(handledEvent,handledEvent.getValue());
+				// gpu.resetNumberOfTrainerSamples();
+			}
+			
+		});
 		subscribeEvent(TrainModelEvent.class, modelEvent -> gpu.gotModelEvent(modelEvent));
-		subscribeEvent(TestModelEvent.class, modelEvent -> gpu.gotModelEvent(modelEvent));
+		
+		subscribeEvent(TestModelEvent.class, modelEvent -> {
+			Model model=modelEvent.getValue();
+			boolean success;
+			if(model.getStudent().getStatus()==Student.Degree.MSc){
+				success = Math.random() <= 0.6;
+			}
+			else{	//PHD
+				success = Math.random() <= 0.8;
+			}
+
+			if(success){
+				model.changeResults(Model.Results.Good);
+			}
+			else{
+				model.changeResults(Model.Results.Bad);
+			}
+			
+			MessageBusImpl.getInstance().complete(modelEvent, model);
+
+
+		});
     }
 
 

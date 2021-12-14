@@ -1,7 +1,9 @@
 package bgu.spl.mics.application.objects;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,13 +45,16 @@ public class GPU {
 	// private Collection<DataBatch> processedBatches;
 	private Queue<Event<Model>> modelEventsQueue;
 	private final int trainingDelay; // according to the type of the gpu
-	private final byte vRAM; // according to the type of the gpu
-	private byte empyVRAM;
+	private final byte vRAM_Size; // according to the type of the gpu
+	private byte emptyVRAM;
+	private ArrayList<DataBatch> vRAM;
 	private int storedProcessedBatchesNumber;
+	private int currentBatchIndex;
+	private int numberOfTrainedSamples;
 	// private int ticksToTrainBatch;
-	// private boolean training;
-	// private boolean testing;
+	private boolean trainingInProgress;
 	private Queue<DataBatch> processBatches;
+	
 	// endregion Added fields
 
 	/**
@@ -87,20 +92,24 @@ public class GPU {
 
 		switch(type) {
 			case GTX1080:
-				vRAM = 8;
+				vRAM_Size =  8;
 				trainingDelay = 4;
 				break;
 			case RTX2080:
-				vRAM = 16;
+				vRAM_Size = 16;
 				trainingDelay = 2;
 				break;
 			default : // RTX3090:
-				vRAM = 32;
+				vRAM_Size = 32;
 				trainingDelay = 1;
 		}
 
+		trainingInProgress=false;
+		currentBatchIndex=0;
+		numberOfTrainedSamples=0;
 		modelEventsQueue = new ArrayDeque<>();
 		processBatches = new ArrayDeque<>();
+		vRAM=new ArrayList<>();
     }
 
 
@@ -120,16 +129,26 @@ public class GPU {
 	// endregion for serialization from json
 
 
-	public void gotTick() {
-
+	public Event<Model> actOnTick() {
+		// Event<Model> eventBeingHandled;
 		// if (modelEventsQueue.peek() instanceof TrainModelEvent) {
 			
 		// }
+		if(!modelEventsQueue.isEmpty()){
+			if(trainingInProgress==false) {
+				/* eventBeingHandled  =*/ beforeTraining();
+			}
 
+			if(trainingInProgress && train()){ 
+				return modelEventsQueue.poll();
+			}
 
+		}
 		// // TODO: treat the case of last tick??
 
 		// // TODO: split to smaller functions (queries + actions)
+		return null;
+		
 	}
 
 
@@ -156,4 +175,98 @@ public class GPU {
 	public void returnProcessedBatch(DataBatch batch) {
 		processBatches.add(batch);
 	}
+
+	public boolean train() {
+		while(currentBatchIndex<model.getData().getSize() && emptyVRAM!=0){
+			DataBatch dataBatch=new DataBatch(model.getData(), currentBatchIndex, this);
+			cluster.sendBatchForProcessing(dataBatch);
+			--emptyVRAM;
+			currentBatchIndex+=1000;
+		}
+
+		// trains processed Databatches
+		// if(! isEmpty()) {
+		// 	DataBatch batch = ((LinkedList<DataBatch>)data).peek();
+
+		// 	if (batch.isInProcessing()) {
+		// 		batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
+		// 	}
+
+		// 	if(batch.process()){
+		// 		removeBatch();
+		// 		cluster.sendProcessedBatchToTraining(batch);
+		// 	}
+			
+		// }	
+
+		if(!vRAM.isEmpty()){
+			DataBatch batch=vRAM.get(0);
+
+			if(batch.isInTraining()){
+				batch.setStartTraining(trainingDelay);
+			}
+
+			if(batch.train()){
+				vRAM.remove(0);
+				numberOfTrainedSamples+=1000;
+				++emptyVRAM;
+
+					//TODO: should be called by GPUService
+					//MessageBusImpl.getInstance().complete(modelEventsQueue.poll(), model);
+					
+
+					if (hasFinishedTraining()) 
+						return true;
+			}
+
+
+		}
+		return false;
+
+	}
+
+	
+
+
+	public void beforeTraining() {
+		Event<Model> message=modelEventsQueue.peek();
+
+		if(message instanceof TrainModelEvent){
+			trainingInProgress=true;
+			model=message.getValue();
+			currentBatchIndex=0;
+			numberOfTrainedSamples=0;
+
+			// while(currentBatchIndex<model.getData().getSize() && emptyVRAM!=0){
+			// 	DataBatch dataBatch=new DataBatch(model.getData(), currentBatchIndex, this);
+			// 	cluster.sendBatchForProcessing(dataBatch);
+			// 	--emptyVRAM;
+			// 	currentBatchIndex+=1000;
+			// }
+
+		}
+		else{	// TestModelEvent
+
+
+
+		}
+	}
+
+	public boolean hasFinishedTraining(){
+		return numberOfTrainedSamples>=model.getData().getSize();
+
+	}
+
+	public void resetNumberOfTrainerSamples(){
+		numberOfTrainedSamples=0;
+	}
+	
+	public Event<Model> getLastEvent(){
+		return modelEventsQueue.poll();
+	}
+
+	public void addTovRAM(DataBatch databatch){
+			vRAM.add(databatch);
+	}
+
 }
