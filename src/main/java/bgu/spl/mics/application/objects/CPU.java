@@ -2,6 +2,9 @@ package bgu.spl.mics.application.objects;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.jar.Attributes.Name;
+
+import javax.print.event.PrintJobListener;
 
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Data.Type;
@@ -18,6 +21,7 @@ public class CPU {
     private int cores;
     private Collection<DataBatch> data;
     private Cluster cluster;
+    private int ticksToCompletion;
 	// private static int[] processing = calcProcessingTicks();
 
 	// private static int[] calcProcessingTicks() {
@@ -27,12 +31,25 @@ public class CPU {
 	// 	}
 	// }
 
-     public CPU(int cores,Cluster cluster){
-        this.cores=cores;
-        this.data=new LinkedList<>();
-        this.cluster=cluster;
+    //  public CPU(int cores,Cluster cluster){
+    //     this.cores=cores;
+    //     this.data=new LinkedList<>();
+    //     this.cluster=cluster;
+    //     ticksToCompletion=0;
 
-     }
+
+    //  }
+
+
+	// region for serialization from json
+	public CPU(int _cores) {
+		cores = _cores;
+        data = new LinkedList<>(); // TODO: make thread-safe?
+        cluster = Cluster.getInstance();
+        cluster.registerCPU(this);
+        ticksToCompletion=0;
+	}
+	// endregion for serialization from json
 
     
 	/**
@@ -64,7 +81,52 @@ public class CPU {
     public void addBatch(DataBatch toAdd){
         this.data.add(toAdd);
 
+        ticksToCompletion+=calculateProcessingTime(toAdd.getData().getType());
+
+        synchronized(System.out){
+            System.out.println("CPU with "+cores+" Cores received batch" + 
+                "\nindex "+toAdd.getIndex() +
+                "\nticksToCompletion=" + ticksToCompletion +
+                "\ntype=" + toAdd.getData().getType());
+        }
+
     }
+
+
+	public void tickCallback() {
+        
+        if(! isEmpty()) {
+            // synchronized (System.out) {
+            //     System.out.println("\nentered !isEmpty()\n");
+            // }
+
+            --ticksToCompletion;
+
+            
+
+            synchronized(System.out) {
+                System.out.println("\n[*] CPU cores=" + cores +
+                    "\nticksToCompetion=" + ticksToCompletion + 
+                    "\nindex=" + ((LinkedList<DataBatch>) data).peekFirst().getIndex() +
+                    "\n");
+            }
+			DataBatch batch = ((LinkedList<DataBatch>)data).peek();
+
+			if (! batch.isInProcessing()) {
+				batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
+			}
+
+			if(batch.process()){
+				cluster.sendProcessedBatchToTraining(removeBatch());
+
+                synchronized (System.out) {
+                    System.out.println("\nentered if(batch.process())\n");
+                }
+			}
+			
+		}
+	}
+
 
     /**
      * @post data.size=@pre databatch.size()-1
@@ -78,14 +140,21 @@ public class CPU {
      * @pre  data.getFirst().getData().getData().processed <  data.getFirst().getData().size
      * @post data.getData().processed= @pre data.getData().processed + 1000 / calculateProcessingTime(dataType) 
      */
-    public void process(){
-        if(!((LinkedList<DataBatch>) data).isEmpty()){
-                ((LinkedList<DataBatch>) data).peekFirst().process();
+    // public void process(){
+    //     if(!((LinkedList<DataBatch>) data).isEmpty()){
+    //             --ticksToCompletion;
+    
 
-                if(isCurrentBatchReady())
-                cluster.sendProcessedBatchToTraining(((LinkedList<DataBatch>) data).pollFirst());
-        }
-    }
+    //             ((LinkedList<DataBatch>) data).peekFirst().process();
+
+    //             if(isCurrentBatchReady()) {
+    //                 cluster.sendProcessedBatchToTraining(((LinkedList<DataBatch>) data).pollFirst());
+    //             }
+                
+                
+
+    //     }
+    // }
 
 
 	/**
@@ -96,7 +165,7 @@ public class CPU {
     }
 
     public boolean isCurrentBatchReady(){
-        return ((LinkedList<DataBatch>) data).getFirst().isFirstBatchProcessed();
+        return ((LinkedList<DataBatch>) data).getFirst().isProcessed();
     }
 
 
@@ -105,41 +174,12 @@ public class CPU {
 	}
 
 
-	// region for serialization from json
-	public CPU(int _cores) {
-		cores = _cores;
-        data = new LinkedList<>(); // TODO: make thread-safe?
-        cluster = Cluster.getInstance();
-	}
-	// endregion for serialization from json
-
-
-	public void tickCallback() {
-		
-        // if(isEmpty()){
-        //     DataBatch batch=cluster.getBatchToProcess();
-
-
-        // }
-        
-        
-        if(! isEmpty()) {
-			DataBatch batch = ((LinkedList<DataBatch>)data).peek();
-
-			if (batch.isInProcessing()) {
-				batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
-			}
-
-			if(batch.process()){
-				removeBatch();
-				cluster.sendProcessedBatchToTraining(batch);
-			}
-			
-		}
-	}
-
     public Cluster getCluster(){
         return cluster;
+    }
+
+    public int getTickToCompletion(){
+        return ticksToCompletion;
     }
 
 }

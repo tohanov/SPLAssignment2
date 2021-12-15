@@ -200,9 +200,9 @@ public abstract class MicroService implements Runnable {
 
 					terminate();
 				}
-				// else {
-				// 	((Callback<Message>)callbackHashMap.get(messageClass)).call(message);
-				// }
+				//  else {
+				//  	((Callback<Message>)callbackHashMap.get(messageClass)).call(message);
+				//  }
 			}
 			catch (InterruptedException e) { 
 				synchronized (System.out) { 

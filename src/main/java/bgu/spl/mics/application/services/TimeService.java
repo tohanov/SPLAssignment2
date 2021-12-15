@@ -63,7 +63,7 @@ public class TimeService extends MicroService {
 				e.printStackTrace(); 
 			} 
 		}
-		
+		MessageBusImpl.getInstance().completeAll();
 		terminate(); // not entering the run() loop
 	}
 }

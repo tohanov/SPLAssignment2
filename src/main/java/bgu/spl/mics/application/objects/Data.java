@@ -70,8 +70,8 @@ public class Data {
 		Data.Type retType;
 		String lowerCaseType = _strType.toLowerCase();
 
-		if (lowerCaseType == "images") retType = Type.Images;
-		else if (lowerCaseType == "text") retType = Type.Text;
+		if (lowerCaseType.equals("images")) retType = Type.Images;
+		else if (lowerCaseType.equals("text")) retType = Type.Text;
 		else retType = Type.Tabular;
 
 		return retType;

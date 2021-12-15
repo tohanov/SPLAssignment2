@@ -104,6 +104,8 @@ public class GPU {
 				trainingDelay = 1;
 		}
 
+		emptyVRAM = vRAM_Size;
+
 		trainingInProgress=false;
 		currentBatchIndex=0;
 		numberOfTrainedSamples=0;
@@ -117,9 +119,9 @@ public class GPU {
 		Type returnType;
 		String uppercaseType = _type.toUpperCase();
 
-		if (uppercaseType == "RTX3090")
+		if (uppercaseType.equals("RTX3090"))
 			returnType = Type.RTX3090;
-		else if (uppercaseType == "RTX2080")
+		else if (uppercaseType.equals("RTX2080"))
 			returnType = Type.RTX2080;
 		else
 			returnType = Type.GTX1080;
@@ -139,7 +141,7 @@ public class GPU {
 				/* eventBeingHandled  =*/ beforeTraining();
 			}
 
-			if(trainingInProgress && train()){ 
+			if(trainingInProgress && train() == true){ 
 				return modelEventsQueue.poll();
 			}
 
@@ -154,6 +156,8 @@ public class GPU {
 
 	public void gotModelEvent(Event<Model> modelEvent) {
 		// TODO: put aside to wait for ticks
+		
+		
 		modelEventsQueue.add(modelEvent);
 	}
 
@@ -177,11 +181,27 @@ public class GPU {
 	}
 
 	public boolean train() {
-		while(currentBatchIndex<model.getData().getSize() && emptyVRAM!=0){
+		synchronized(System.out){
+			System.out.println("\n[*] Before batch creation loop, model=" + model.getName() +
+			 "\nof size " + model.getData().getSize() +
+			  "\ncurrbatchindex=" + currentBatchIndex +
+			  "\nemptyVRam=" + emptyVRAM +
+			  "\n");
+		}
+
+		while(currentBatchIndex<model.getData().getSize() && emptyVRAM>0){
 			DataBatch dataBatch=new DataBatch(model.getData(), currentBatchIndex, this);
 			cluster.sendBatchForProcessing(dataBatch);
 			--emptyVRAM;
 			currentBatchIndex+=1000;
+		}
+		
+		synchronized(System.out){
+			System.out.println("\n[*] After batch creation loop, model=" + model.getName() +
+			 "\nof size " + model.getData().getSize() +
+			  "\ncurrbatchindex=" + currentBatchIndex +
+			  "\nemptyVRam=" + emptyVRAM + 
+			  "\n");
 		}
 
 		// trains processed Databatches
@@ -206,17 +226,13 @@ public class GPU {
 				batch.setStartTraining(trainingDelay);
 			}
 
-			if(batch.train()){
+			if(batch.train() == true){
 				vRAM.remove(0);
 				numberOfTrainedSamples+=1000;
 				++emptyVRAM;
-
-					//TODO: should be called by GPUService
-					//MessageBusImpl.getInstance().complete(modelEventsQueue.poll(), model);
 					
 
-					if (hasFinishedTraining()) 
-						return true;
+				return hasFinishedTraining();
 			}
 
 
@@ -237,17 +253,16 @@ public class GPU {
 			currentBatchIndex=0;
 			numberOfTrainedSamples=0;
 
+			synchronized(System.out){
+				System.out.println("initializing training on model " + model.getName() + " of size " + model.getData().getSize());
+			}
+
 			// while(currentBatchIndex<model.getData().getSize() && emptyVRAM!=0){
 			// 	DataBatch dataBatch=new DataBatch(model.getData(), currentBatchIndex, this);
 			// 	cluster.sendBatchForProcessing(dataBatch);
 			// 	--emptyVRAM;
 			// 	currentBatchIndex+=1000;
 			// }
-
-		}
-		else{	// TestModelEvent
-
-
 
 		}
 	}

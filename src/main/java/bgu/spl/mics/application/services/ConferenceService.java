@@ -2,8 +2,14 @@ package bgu.spl.mics.application.services;
 
 import java.util.Map;
 
+import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.PublishConferenceBroadcast;
+import bgu.spl.mics.application.messages.PublishResultsEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.objects.Cluster;
+import bgu.spl.mics.application.objects.ConfrenceInformation;
+import bgu.spl.mics.application.objects.Model;
 
 /**
  * Conference service is in charge of
@@ -15,30 +21,37 @@ import bgu.spl.mics.application.messages.TickBroadcast;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class ConferenceService extends MicroService {
-    // public ConferenceService(String name) {
-    //     super(name);
-    //     // TODO Implement this
-    // }
-
+    
     @Override
     protected void initialize() {
-        // TODO Implement this
 
-		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {} );
+		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
+            if(conference.increaseTime()){
+                MessageBusImpl.getInstance().sendBroadcast(new PublishConferenceBroadcast(conference.returnSuccessfulModels()));
+                uploadConferenceInformation();
+                terminate();
+            }
+        } );
+
+        subscribeEvent(PublishResultsEvent.class, (message)->{
+            Model m=message.getValue();
+            conference.addSuccessfulModel(m);
+
+        });
     }
 
-    public String[] getNamesOfSuccessfulModels() {
-        // TODO complete
-        return null;
+    public void uploadConferenceInformation(){
+        Cluster.getInstance().uploadConferenceInformation(conference);
+
     }
+
+    private ConfrenceInformation conference;
 
 	// region for serialization from json
-	private int date;
-
 	public ConferenceService(Map<String,Object> _conference) {
         super("Conference_" + (String)_conference.get("name"));
         
-		date = ((Double)_conference.get("date")).intValue();
+		conference=new ConfrenceInformation((String)_conference.get("name"),((Double)_conference.get("date")).intValue());
     }
 	// endregion for serialization from json
 }

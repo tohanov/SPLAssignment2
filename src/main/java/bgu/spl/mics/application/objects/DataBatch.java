@@ -22,13 +22,14 @@ public class DataBatch {
         this.data=data;
         this.start_index=start_index;
 		this.ownerGpu = _ownerGpu;
-		inProcessing = true;
+		inProcessing = false;
 		
     }
 
 
 	public void setStartProcessing(int tickCount) {
 		processingTickCount = tickCount;
+		inProcessing = true;
 	}
 
 	public void setStartTraining(int tickCount) {
@@ -41,8 +42,8 @@ public class DataBatch {
 
     }
 
-    public boolean isFirstBatchProcessed(){
-        return data.isProcessed();
+    public boolean isProcessed(){
+        return processingTickCount == 0;
     }
 
 
@@ -52,7 +53,7 @@ public class DataBatch {
 
 
 	public boolean process() {
-   		return --processingTickCount == 0;
+   		return --processingTickCount <= 0;//== 0;
     }
 
 	public boolean train() {
@@ -67,5 +68,10 @@ public class DataBatch {
 	public boolean isInTraining(){
 		return inTraining;
 	}
+
+
+    public int getIndex() {
+        return start_index;
+    }
 
 }

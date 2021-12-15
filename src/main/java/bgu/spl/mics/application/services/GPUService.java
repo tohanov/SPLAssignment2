@@ -73,7 +73,13 @@ public class GPUService extends MicroService {
 			}
 			
 		});
-		subscribeEvent(TrainModelEvent.class, modelEvent -> gpu.gotModelEvent(modelEvent));
+		subscribeEvent(TrainModelEvent.class, modelEvent -> {
+			synchronized(System.out){
+				System.out.println(getName()+" Received model "+modelEvent.getValue().getName());
+			}
+
+			gpu.gotModelEvent(modelEvent);
+		});
 		
 		subscribeEvent(TestModelEvent.class, modelEvent -> {
 			Model model=modelEvent.getValue();

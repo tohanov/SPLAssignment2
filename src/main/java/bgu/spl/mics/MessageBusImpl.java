@@ -10,6 +10,7 @@ import bgu.spl.mics.application.messages.PublishResultsEvent;
 import bgu.spl.mics.application.messages.TestModelEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
+import bgu.spl.mics.application.objects.Model;
 import bgu.spl.mics.example.messages.ExampleEvent;
 
 
@@ -96,6 +97,18 @@ public class MessageBusImpl implements MessageBus {
 		// }
 	}
 
+	public void completeAll(){
+		Model m=new Model("", null, null);
+		m.changeResults(Model.Results.Bad);
+
+		for(Future future: futureHashMap.values()){
+			future.resolve(m);
+
+
+		}
+
+
+	}
 
 	@Override
 	public void sendBroadcast(Broadcast b) {

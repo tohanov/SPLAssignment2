@@ -36,6 +36,10 @@ public class Model {
 		results=Results.None;
 
 	}
+
+	public String getName() {
+        return name;
+    }
 	public Status getStatus(){
 		return status;
 	}
@@ -59,6 +63,8 @@ public class Model {
 	public Student getStudent(){
 		return student;
 	}
+
+	
 	
 	// region for serialization from json
 	public Model(String _name, String _dataType, int _size, Student _student) {
@@ -74,4 +80,5 @@ public class Model {
 		this((String)_model.get("name"), (String)_model.get("type"), ((Double)_model.get("size")).intValue(), _student);
 	}
 	// endregion for serialization from json
+    
 }

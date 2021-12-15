@@ -49,8 +49,16 @@ public class Student {
         return publications;
     }
 
+    public void updatePublications(){
+        ++publications;
+    }
+
     public int getPapersRead() {
         return papersRead;
+    }
+
+    public void updatePapersRead(){
+        ++papersRead;
     }
 
     public ArrayList<Model> getModels(){

@@ -35,26 +35,31 @@ public class StudentService extends MicroService {
 
     @Override
     protected void initialize() {
+		// static Future<Model> f = 
+
        subscribeBroadcast(TickBroadcast.class, message->{
 			
-			if(currentModelNumber<models.size()){
+			if(currentModelNumber < models.size()){
 				
 				Model currentModel=models.get(currentModelNumber);
 
-				if(currentModel.getStatus().equals(Model.Status.PreTrained)){
+				if(currentModel.getStatus()==(Model.Status.PreTrained)){
 					currentModel.changeStatus(Model.Status.Training);
 					Future<Model> f=sendEvent(new TrainModelEvent(currentModel));
+					synchronized(System.out){
+						System.out.println(getName()+" Sending model "+currentModel.getName());
+					}
 					currentModel=f.get();
 					
 				}
 
-				else if(currentModel.getStatus().equals(Model.Status.Trained)){
+				else if(currentModel.getStatus()==(Model.Status.Trained)){
 					Future<Model> f=sendEvent(new TestModelEvent(currentModel));
 					currentModel=f.get();
 
-					if(currentModel.getResults().equals(Model.Results.Good))
+					if(currentModel.getResults()==(Model.Results.Good))
 						sendEvent(new PublishResultsEvent(currentModel));
-
+					
 					currentModelNumber++;
 
 				}
@@ -68,13 +73,27 @@ public class StudentService extends MicroService {
 			
 		});
 
-		subscribeBroadcast(PublishConferenceBroadcast.class, message->{//TODO: implement
+		subscribeBroadcast(PublishConferenceBroadcast.class, message->{
+			for(Model m: message.getValue()){
+				if(m.getStudent()==student)
+					student.updatePublications();
+				else
+					student.updatePapersRead();
+			}
 
 		});
 
 
 
 		
+		// if(! models.isEmpty()) {
+			// Model m = sendEvent(new TestModelEvent( sendEvent(new TrainModelEvent(models.get(0))).get() )).get();
+			// // Future<Model> f=sendEvent(new TrainModelEvent(models.get(0)));
+			// if (m.getResults() == Model.Results.Good){
+			// 	sendEvent(new PublishResultsEvent(m));
+			// }
+
+		// }
 
 
 
