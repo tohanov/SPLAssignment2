@@ -47,7 +47,7 @@ public class CRMSRunner {
 				catch (InterruptedException ie) { }
 			}
 		}
-		
+
 		Thread timeServiceThread = new Thread(parser.getTimeService());
 		timeServiceThread.start();
 
@@ -60,9 +60,10 @@ public class CRMSRunner {
 			synchronizedPrintStackTrace(e); 
 		}
 
-		for (MicroService microService : parser.getMicroServices()) {
-			new Thread(microService).start();
-		}
+		// TODO: go over created threads and interrupt each
+		// for (MicroService microService : parser.getMicroServices()) {
+		// 	new Thread(microService).start();
+		// }
 
 		// output a json file form statistics object of cluster
 		serializeOutputFile(outputFilePath);

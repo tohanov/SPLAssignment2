@@ -34,6 +34,7 @@ public class StudentService extends MicroService {
 	private Student student;
 	private ArrayList<Model> models;
 	private Iterator<Model> modelsIterator;
+	private Future<Model> waitingFuture;
 
 	public StudentService(Map<String,Object> _student) {
 		super((String)_student.get("name"));
@@ -51,8 +52,8 @@ public class StudentService extends MicroService {
 			models.add(new Model(model, student));
 		}
 
+		waitingFuture = null;
 		modelsIterator = models.iterator();
-
 		// currentModelNumber=0;
 	}
 	// endregion for serialization from json
@@ -63,43 +64,57 @@ public class StudentService extends MicroService {
 
     @Override
     protected void initialize() {
-
-		// TODO: idea: make another thread for each student or a shared thread for all students (for reading publications for example)
-		subscribeBroadcast(SystemStartupBroadcast.class, startupBroadcast -> {
-			while ( ! Thread.currentThread().isInterrupted() && modelsIterator.hasNext()) {
-				Model currentModel = modelsIterator.next();
-
-				Future<Model> trainFuture = sendEvent(new TrainModelEvent(currentModel));
-
-				// TODO: remove debug
-				synchronized(System.out) {
-					System.out.println(getName() + " Sending model " + currentModel.getName() + " for training");
-				}
-
-				trainFuture.get();
-
-				if (Thread.currentThread().isInterrupted()) {
-					break;
-				}
-
-				Future<Model> testFuture = sendEvent(new TestModelEvent(currentModel));
-
-				// TODO: remove debug
-				synchronized(System.out) {
-					System.out.println(getName() + " Sending model " + currentModel.getName() + " for testing");
-				}
-
-				testFuture.get();
-
-				if (Thread.currentThread().isInterrupted()) {
-					break;
-				}
-
-				if(currentModel.getResults() == Model.Results.Good) {
-					sendEvent(new PublishResultsEvent(currentModel));
-				}
+	
+		subscribeBroadcast(TickBroadcast.class, startupBroadcast -> {
+			if (waitingFuture != null) {
+				if (waitingFuture.isDone()) {
+					Model currentModel = waitingFuture.get();
+					if (currentModel.getStatus() == Status.Trained) {
+						/* currentModel =  */sendEvent(new TestModelEvent(currentModel)).get();
+						if (currentModel.getResults() == Model.Results.Good) {
+							sendEvent(new PublishResultsEvent(currentModel));
+						}
+					}
 				}
 			}
+			else if (modelsIterator.hasNext()) { // waitingFuture == null
+				waitingFuture = sendEvent(new TrainModelEvent(modelsIterator.next()));
+			}
+
+
+			// while ( ! Thread.currentThread().isInterrupted() && modelsIterator.hasNext()) {
+			// 	Model currentModel = modelsIterator.next();
+
+			// 	Future<Model> trainFuture = sendEvent(new TrainModelEvent(currentModel));
+
+			// 	// TODO: remove debug
+			// 	synchronized(System.out) {
+			// 		System.out.println(getName() + " Sending model " + currentModel.getName() + " for training");
+			// 	}
+
+			// 	trainFuture.get();
+
+			// 	if (Thread.currentThread().isInterrupted()) {
+			// 		break;
+			// 	}
+
+			// 	Future<Model> testFuture = sendEvent(new TestModelEvent(currentModel));
+
+			// 	// TODO: remove debug
+			// 	synchronized(System.out) {
+			// 		System.out.println(getName() + " Sending model " + currentModel.getName() + " for testing");
+			// 	}
+
+			// 	testFuture.get();
+
+			// 	if (Thread.currentThread().isInterrupted()) {
+			// 		break;
+			// 	}
+
+			// 	if(currentModel.getResults() == Model.Results.Good) {
+			// 		sendEvent(new PublishResultsEvent(currentModel));
+			// 	}
+			// }
 		});
 
 		subscribeBroadcast(PublishConferenceBroadcast.class, message->{ // TODO: move into student object's function

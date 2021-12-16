@@ -191,7 +191,7 @@ public abstract class MicroService implements Runnable {
 		// for notifying of finishing initialization
 		synchronized (this) { this.notifyAll(); }
 
-        while (!terminated) {
+        while (!terminated && !Thread.currentThread().isInterrupted()) {
 			try {
 				Message message = messageBus.awaitMessage(this);
 				Class<? extends Message> messageClass = message.getClass();
@@ -212,8 +212,4 @@ public abstract class MicroService implements Runnable {
 
 		MessageBusImpl.getInstance().unregister(this);
     }
-
-
-	// private 
-
 }
