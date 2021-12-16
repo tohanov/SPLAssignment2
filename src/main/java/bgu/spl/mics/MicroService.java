@@ -156,6 +156,11 @@ public abstract class MicroService implements Runnable {
      */
     protected final void  terminate() {
         this.terminated = true;
+		
+		// TODO: remove this debug block
+		synchronized (System.out) {
+			System.out.println("[*] " + name + ": flagged to terminate"); 
+		}
     }
 
 
@@ -183,6 +188,9 @@ public abstract class MicroService implements Runnable {
 
         initialize();
 
+		// for notifying of finishing initialization
+		synchronized (this) { this.notifyAll(); }
+
         while (!terminated) {
 			try {
 				Message message = messageBus.awaitMessage(this);
@@ -190,22 +198,13 @@ public abstract class MicroService implements Runnable {
 
 				// TODO: think if should let the services handle the last tick as well or terminate everything without that
 				((Callback<Message>)callbackHashMap.get(messageClass)).call(message);
-				
-				if (message instanceof TickBroadcast && ((TickBroadcast)message).isLast()) {
-
-					// TODO: remove debug block
-					synchronized (System.out) {
-						System.out.println("[*] " + name + ": got LAST tick");
-					}
-
-					terminate();
-				}
-				//  else {
-				//  	((Callback<Message>)callbackHashMap.get(messageClass)).call(message);
-				//  }
 			}
-			catch (InterruptedException e) { 
-				synchronized (System.out) { 
+			catch (InterruptedException e) {
+				terminate();
+
+				// TODO: remove?
+				synchronized (System.out) {
+					System.out.println("[*] " + name + ": got interrupted (InterruptedException)"); 
 					e.printStackTrace();
 				}
 			}

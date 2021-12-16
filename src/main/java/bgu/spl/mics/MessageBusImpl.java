@@ -22,13 +22,15 @@ import bgu.spl.mics.example.messages.ExampleEvent;
  */
 public class MessageBusImpl implements MessageBus {
 
-	private final static MessageBusImpl instance = new MessageBusImpl();
-
+	private static final class InternalSingleton {
+		private static final MessageBusImpl instance = new MessageBusImpl();
+	}
 	
-	HashMap<MicroService,Queue<Message>> microServicesHashMap;
-	HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> broadcastHashMap; 
-	HashMap<Class<? extends Message>,LinkedList<MicroService>> eventHashMap;
-	HashMap<Event<? extends Object>,Future<? extends Object>> futureHashMap;
+	
+	private HashMap<MicroService,Queue<Message>> microServicesHashMap;
+	private HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> broadcastHashMap; 
+	private HashMap<Class<? extends Message>,LinkedList<MicroService>> eventHashMap;
+	private HashMap<Event<? extends Object>,Future<? extends Object>> futureHashMap;
 
 
 	private MessageBusImpl(){
@@ -49,10 +51,7 @@ public class MessageBusImpl implements MessageBus {
 
 
 	public static MessageBusImpl getInstance() {
-		// if(instance==null)
-		// 	instance=new MessageBusImpl();
-
-		return instance;
+		return InternalSingleton.instance;
 	}
 
 
@@ -97,18 +96,16 @@ public class MessageBusImpl implements MessageBus {
 		// }
 	}
 
-	public void completeAll(){
+
+	public void completeAll(){ // TODO : rethink
 		Model m=new Model("", null, null);
 		m.changeResults(Model.Results.Bad);
 
 		for(Future future: futureHashMap.values()){
 			future.resolve(m);
-
-
 		}
-
-
 	}
+
 
 	@Override
 	public void sendBroadcast(Broadcast b) {

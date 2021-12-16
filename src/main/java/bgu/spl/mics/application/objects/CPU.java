@@ -22,23 +22,7 @@ public class CPU {
     private Collection<DataBatch> data;
     private Cluster cluster;
     private int ticksToCompletion;
-	// private static int[] processing = calcProcessingTicks();
-
-	// private static int[] calcProcessingTicks() {
-	// 	int[] arr = new int[18];
-	// 	for () { 
-
-	// 	}
-	// }
-
-    //  public CPU(int cores,Cluster cluster){
-    //     this.cores=cores;
-    //     this.data=new LinkedList<>();
-    //     this.cluster=cluster;
-    //     ticksToCompletion=0;
-
-
-    //  }
+	private int weight; // TODO complete for comparator
 
 
 	// region for serialization from json
@@ -67,11 +51,7 @@ public class CPU {
             return 32/cores;
     }
 
-    /**
-     * 
-     * @param toAdd!=null
-     * 
-  	
+
 	/**
      * 
      * @param toAdd The batch to add
@@ -94,7 +74,6 @@ public class CPU {
 
 
 	public void tickCallback() {
-        
         if(! isEmpty()) {
             // synchronized (System.out) {
             //     System.out.println("\nentered !isEmpty()\n");
@@ -102,17 +81,16 @@ public class CPU {
 
             --ticksToCompletion;
 
-            
-
             synchronized(System.out) {
                 System.out.println("\n[*] CPU cores=" + cores +
                     "\nticksToCompetion=" + ticksToCompletion + 
                     "\nindex=" + ((LinkedList<DataBatch>) data).peekFirst().getIndex() +
                     "\n");
             }
+
 			DataBatch batch = ((LinkedList<DataBatch>)data).peek();
 
-			if (! batch.isInProcessing()) {
+			if ( ! batch.isInProcessing()) {
 				batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
 			}
 
@@ -123,7 +101,6 @@ public class CPU {
                     System.out.println("\nentered if(batch.process())\n");
                 }
 			}
-			
 		}
 	}
 
@@ -135,6 +112,53 @@ public class CPU {
         return ((LinkedList<DataBatch>) data).removeFirst();
     }
 
+
+	/**
+	 * @return True if CPU is ready for batches, False otherwise
+	 */
+    public boolean isEmpty(){
+        return data.isEmpty();
+    }
+
+
+    public boolean isCurrentBatchReady(){
+        return ((LinkedList<DataBatch>) data).getFirst().isProcessed();
+    }
+
+
+	public int getCores() {
+		return cores;
+	}
+
+
+    public Cluster getCluster(){
+        return cluster;
+    }
+
+
+    public int getTickToCompletion(){
+        return ticksToCompletion;
+    }
+
+	
+	// private static int[] processing = calcProcessingTicks();
+
+	// private static int[] calcProcessingTicks() {
+	// 	int[] arr = new int[18];
+	// 	for () { 
+
+	// 	}
+	// }
+
+    //  public CPU(int cores,Cluster cluster){
+    //     this.cores=cores;
+    //     this.data=new LinkedList<>();
+    //     this.cluster=cluster;
+    //     ticksToCompletion=0;
+
+
+    //  }
+	
 
 	/**
      * @pre  data.getFirst().getData().getData().processed <  data.getFirst().getData().size
@@ -155,31 +179,4 @@ public class CPU {
 
     //     }
     // }
-
-
-	/**
-	 * @return True if CPU is ready for batches, False otherwise
-	 */
-    public boolean isEmpty(){
-        return data.isEmpty();
-    }
-
-    public boolean isCurrentBatchReady(){
-        return ((LinkedList<DataBatch>) data).getFirst().isProcessed();
-    }
-
-
-	public int getCores() {
-		return cores;
-	}
-
-
-    public Cluster getCluster(){
-        return cluster;
-    }
-
-    public int getTickToCompletion(){
-        return ticksToCompletion;
-    }
-
 }

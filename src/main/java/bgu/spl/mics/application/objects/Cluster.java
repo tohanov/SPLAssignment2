@@ -24,7 +24,9 @@ import bgu.spl.mics.application.objects.Data.Type;
  */
 public class Cluster {
 
-	private static Cluster instance = new Cluster();
+	private static final class InternalSingleton {
+		private static final Cluster instance = new Cluster();
+	}
 
 
 	// region According to instructions
@@ -45,7 +47,7 @@ public class Cluster {
      * Retrieves the single instance of this class.
      */
 	public static Cluster getInstance() {
-		return instance;
+		return InternalSingleton.instance;
 	}
 
 	private Cluster() {
@@ -153,7 +155,7 @@ public class Cluster {
 	// and let cluster handle assigning them
 	public void sendProcessedBatchToTraining(DataBatch dataBatch) {
 		GPU destinationGPU=dataBatch.getOwnerGPU();
-		destinationGPU.addTovRAM(dataBatch);
+		destinationGPU.returnProcessedBatch(dataBatch);
 	}
 
 

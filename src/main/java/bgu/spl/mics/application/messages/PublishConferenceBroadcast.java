@@ -13,9 +13,7 @@ public class PublishConferenceBroadcast implements Broadcast {
         this.toPublish=toPublish;
     }
     
-    public ArrayList<Model> getValue(){
+    public ArrayList<Model> getSuccessfulModels(){
         return toPublish;
     }
-
-
 }

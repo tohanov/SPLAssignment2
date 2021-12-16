@@ -29,6 +29,56 @@ import bgu.spl.mics.Callback;
  */
 public class GPUService extends MicroService {
 
+
+	// region for serialization from json
+	private static int gpuCounter = 0;
+	private GPU gpu;
+
+	public GPUService(String _gpu) {
+		super("GPU_" + gpuCounter);
+
+		gpu = new GPU(_gpu);
+		++gpuCounter;
+	}
+	// endregion for serialization from json
+
+
+    @Override
+    protected void initialize() {
+
+		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> { 
+			Event<Model> handledEvent = gpu.actOnTick();
+			if(handledEvent != null) {
+				MessageBusImpl.getInstance().complete(handledEvent, handledEvent.getValue());
+			}
+
+			// if (tickBroadcast.isLast()) {
+
+			// 	// TODO: remove debug block
+			// 	synchronized (System.out) {
+			// 		System.out.println("[*] " + getName() + ": got LAST tick");
+			// 	}
+
+			// 	terminate();
+			// }
+		});
+
+		subscribeEvent(TrainModelEvent.class, trainModelEvent -> {
+			// TODO : remove debug
+			synchronized(System.out){
+				System.out.println(getName()+" Received model "+trainModelEvent.getValue().getName() + " for training");
+			}
+
+			gpu.trainModel(trainModelEvent);
+		});
+		
+		subscribeEvent(TestModelEvent.class, testModelEvent -> {
+			gpu.testModel(testModelEvent);
+			MessageBusImpl.getInstance().complete(testModelEvent, testModelEvent.getValue());
+		});
+    }
+
+
 	// Original
     // public GPUService(String name) {
     //     super("Change_This_Name");
@@ -55,65 +105,4 @@ public class GPUService extends MicroService {
 	// 	// ticksToTrainBatch = 0; // TODO: remove?
 	// 	// training = false;
     // }
-
-
-    @Override
-    protected void initialize() {
-        // TODO Implement this
-		// MessageBusImpl messageBus = MessageBusImpl.getInstance();
-		// messageBus.register(this); // moved to MicroService
-
-
-		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> { 
-			Event<Model> handledEvent = gpu.actOnTick();
-			if(handledEvent != null) {
-				// Event<Model> lastEvent=gpu.getLastEvent();
-				MessageBusImpl.getInstance().complete(handledEvent,handledEvent.getValue());
-				// gpu.resetNumberOfTrainerSamples();
-			}
-			
-		});
-		subscribeEvent(TrainModelEvent.class, modelEvent -> {
-			synchronized(System.out){
-				System.out.println(getName()+" Received model "+modelEvent.getValue().getName());
-			}
-
-			gpu.gotModelEvent(modelEvent);
-		});
-		
-		subscribeEvent(TestModelEvent.class, modelEvent -> {
-			Model model=modelEvent.getValue();
-			boolean success;
-			if(model.getStudent().getStatus()==Student.Degree.MSc){
-				success = Math.random() <= 0.6;
-			}
-			else{	//PHD
-				success = Math.random() <= 0.8;
-			}
-
-			if(success){
-				model.changeResults(Model.Results.Good);
-			}
-			else{
-				model.changeResults(Model.Results.Bad);
-			}
-			
-			MessageBusImpl.getInstance().complete(modelEvent, model);
-
-
-		});
-    }
-
-
-	// region for serialization from json
-	private static int gpuCounter = 0;
-	private GPU gpu;
-
-	public GPUService(String _gpu) {
-		super("GPU_" + gpuCounter);
-
-		gpu = new GPU(_gpu);
-		++gpuCounter;
-	}
-	// endregion for serialization from json
 }

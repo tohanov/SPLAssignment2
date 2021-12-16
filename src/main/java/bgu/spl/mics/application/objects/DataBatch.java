@@ -32,7 +32,7 @@ public class DataBatch {
 		inProcessing = true;
 	}
 
-	public void setStartTraining(int tickCount) {
+	public void initTraining(int tickCount) {
 		trainingTickCount = tickCount;
 	}
 

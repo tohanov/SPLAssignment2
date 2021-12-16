@@ -42,7 +42,6 @@ public class ConferenceService extends MicroService {
 
     public void uploadConferenceInformation(){
         Cluster.getInstance().uploadConferenceInformation(conference);
-
     }
 
     private ConfrenceInformation conference;

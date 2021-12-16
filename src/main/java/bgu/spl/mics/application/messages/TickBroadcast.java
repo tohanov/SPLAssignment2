@@ -3,15 +3,15 @@ import bgu.spl.mics.Broadcast;
 
 public class TickBroadcast implements Broadcast {
     
-	private boolean last;
+	// private boolean last;
 
 
-	public TickBroadcast(boolean _isLast) {
-		last = _isLast;
+	public TickBroadcast(/* boolean _isLast */) {
+		// last = _isLast;
 	}
 
 
-	public boolean isLast() {
-		return last;
-	}
+	// public boolean isLast() {
+	// 	return last;
+	// }
 }

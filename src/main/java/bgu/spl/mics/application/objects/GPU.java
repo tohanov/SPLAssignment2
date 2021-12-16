@@ -17,6 +17,7 @@ import bgu.spl.mics.application.services.GPUService;
 import bgu.spl.mics.application.messages.TestModelEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
+import bgu.spl.mics.application.objects.Model.Status;
 import bgu.spl.mics.Callback;
 import bgu.spl.mics.Event;
 
@@ -43,75 +44,36 @@ public class GPU {
 	// region Added fields
     // private GPUService service;
 	// private Collection<DataBatch> processedBatches;
-	private Queue<Event<Model>> modelEventsQueue;
+	private ArrayDeque<Event<Model>> modelEventsQueue;
+	private ArrayDeque<DataBatch> vRAM;
 	private final int trainingDelay; // according to the type of the gpu
-	private final byte vRAM_Size; // according to the type of the gpu
-	private byte emptyVRAM;
-	private ArrayList<DataBatch> vRAM;
-	private int storedProcessedBatchesNumber;
+	private byte emptyVRAM;	// according to the type of the gpu
 	private int currentBatchIndex;
 	private int numberOfTrainedSamples;
-	// private int ticksToTrainBatch;
-	private boolean trainingInProgress;
-	private Queue<DataBatch> processBatches;
-	
 	// endregion Added fields
-
-	/**
-	 * @param _type a string representing the GPU type
-	 * 
-	 * @post vRAM is in {8, 16, 32}
-	 * @post processedBatchesNum == 0
-	 * @post MessageBusImpl.getInstance().isRegistered(service) == true
-	 * @post service != null
-	 */
-    // public GPU(/*String _name,*/ String _type) {
-    //     this.type = typeFromString(_type);
-	// 	// this.service = new GPUService(_name, this);
-
-	// 	processedBatchesNum = 0;
-
-	// 	switch(type) {
-	// 		case GTX1080:
-	// 			vRAM = 8;
-	// 			break;
-	// 		case RTX2080:
-	// 			vRAM = 16;
-	// 			break;
-	// 		default : // RTX3090:
-	// 			vRAM = 32;
-	// 	}
-    // }
 
 
 	// region for serialization from json
 	public GPU(String _type) {
         this.type = typeFromString(_type);
 		model = null;
-		storedProcessedBatchesNumber = 0;
 
 		switch(type) {
 			case GTX1080:
-				vRAM_Size =  8;
+				emptyVRAM =  8;
 				trainingDelay = 4;
 				break;
 			case RTX2080:
-				vRAM_Size = 16;
+				emptyVRAM = 16;
 				trainingDelay = 2;
 				break;
 			default : // RTX3090:
-				vRAM_Size = 32;
+				emptyVRAM = 32;
 				trainingDelay = 1;
 		}
 
-		emptyVRAM = vRAM_Size;
-
-		trainingInProgress=false;
-		currentBatchIndex=0;
-		numberOfTrainedSamples=0;
 		modelEventsQueue = new ArrayDeque<>();
-		processBatches = new ArrayDeque<>();
-		vRAM=new ArrayList<>();
+		vRAM = new ArrayDeque<>();
     }
 
 
@@ -131,56 +93,43 @@ public class GPU {
 	// endregion for serialization from json
 
 
-	public Event<Model> actOnTick() {
-		// Event<Model> eventBeingHandled;
-		// if (modelEventsQueue.peek() instanceof TrainModelEvent) {
-			
-		// }
-		if(!modelEventsQueue.isEmpty()){
-			if(trainingInProgress==false) {
-				/* eventBeingHandled  =*/ beforeTraining();
-			}
-
-			if(trainingInProgress && train() == true){ 
-				return modelEventsQueue.poll();
-			}
-
-		}
-		// // TODO: treat the case of last tick??
-
-		// // TODO: split to smaller functions (queries + actions)
-		return null;
-		
-	}
-
-
-	public void gotModelEvent(Event<Model> modelEvent) {
-		// TODO: put aside to wait for ticks
-		
-		
+	public void trainModel(Event<Model> modelEvent) {
 		modelEventsQueue.add(modelEvent);
 	}
 
 
-	/**
-	 * @inv processedBatchesNum >= 0
-	 */
-	public void finishTrainingBatch() {
-		--storedProcessedBatchesNumber;
+	public Event<Model> actOnTick() {
+		if( ! modelEventsQueue.isEmpty()) {
+			if (modelEventsQueue.peek().getValue().getStatus() == Status.PreTrained) {// (trainingInProgress==false) {
+				initBatchTraining();
+			}
+
+			else if(modelEventsQueue.peek().getValue().getStatus() == Status.Training) {
+				if (train() == true) { // train on this tick and see if finished training
+					return modelEventsQueue.poll();	// remove from vRAM
+				}
+			}
+		}
+		// TODO: split to smaller functions (queries + actions)
+		return null;
 	}
 
 
-	// private void sendNextBatches() {
-	// 	DataBatch dataBatch;
-	// 	cluster.sendBatchesForProcessing(this, dataBatch);
-	// }
+	public void initBatchTraining() {
+		model = modelEventsQueue.peek().getValue();
+		model.advanceStatus();
+		currentBatchIndex=0;
+		numberOfTrainedSamples=0;
 
-
-	public void returnProcessedBatch(DataBatch batch) {
-		processBatches.add(batch);
+		// TODO : remove debug
+		synchronized(System.out){
+			System.out.println("initializing training on model " + model.getName() + " of size " + model.getData().getSize());
+		}
 	}
+
 
 	public boolean train() {
+		// TODO : remove debug
 		synchronized(System.out){
 			System.out.println("\n[*] Before batch creation loop, model=" + model.getName() +
 			 "\nof size " + model.getData().getSize() +
@@ -189,99 +138,87 @@ public class GPU {
 			  "\n");
 		}
 
-		while(currentBatchIndex<model.getData().getSize() && emptyVRAM>0){
+		// send more batches to cluster if there's available space to store them when they get back
+		while(currentBatchIndex < model.getData().getSize() && emptyVRAM != 0){
 			DataBatch dataBatch=new DataBatch(model.getData(), currentBatchIndex, this);
 			cluster.sendBatchForProcessing(dataBatch);
-			--emptyVRAM;
+			--emptyVRAM; // reserving space for it to come back to
 			currentBatchIndex+=1000;
 		}
 		
+		// TODO : remove debug
 		synchronized(System.out){
 			System.out.println("\n[*] After batch creation loop, model=" + model.getName() +
 			 "\nof size " + model.getData().getSize() +
 			  "\ncurrbatchindex=" + currentBatchIndex +
 			  "\nemptyVRam=" + emptyVRAM + 
 			  "\n");
-		}
+		}	
 
-		// trains processed Databatches
-		// if(! isEmpty()) {
-		// 	DataBatch batch = ((LinkedList<DataBatch>)data).peek();
+		if( ! vRAM.isEmpty()){
+			DataBatch batch=vRAM.peek();
 
-		// 	if (batch.isInProcessing()) {
-		// 		batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
-		// 	}
-
-		// 	if(batch.process()){
-		// 		removeBatch();
-		// 		cluster.sendProcessedBatchToTraining(batch);
-		// 	}
-			
-		// }	
-
-		if(!vRAM.isEmpty()){
-			DataBatch batch=vRAM.get(0);
-
-			if(batch.isInTraining()){
-				batch.setStartTraining(trainingDelay);
+			if( ! batch.isInTraining()){
+				batch.initTraining(trainingDelay);
 			}
 
 			if(batch.train() == true){
-				vRAM.remove(0);
+				vRAM.poll();
 				numberOfTrainedSamples+=1000;
 				++emptyVRAM;
-					
 
 				return hasFinishedTraining();
 			}
-
-
 		}
+
 		return false;
-
 	}
 
-	
-
-
-	public void beforeTraining() {
-		Event<Model> message=modelEventsQueue.peek();
-
-		if(message instanceof TrainModelEvent){
-			trainingInProgress=true;
-			model=message.getValue();
-			currentBatchIndex=0;
-			numberOfTrainedSamples=0;
-
-			synchronized(System.out){
-				System.out.println("initializing training on model " + model.getName() + " of size " + model.getData().getSize());
-			}
-
-			// while(currentBatchIndex<model.getData().getSize() && emptyVRAM!=0){
-			// 	DataBatch dataBatch=new DataBatch(model.getData(), currentBatchIndex, this);
-			// 	cluster.sendBatchForProcessing(dataBatch);
-			// 	--emptyVRAM;
-			// 	currentBatchIndex+=1000;
-			// }
-
-		}
-	}
 
 	public boolean hasFinishedTraining(){
 		return numberOfTrainedSamples>=model.getData().getSize();
-
 	}
 
-	public void resetNumberOfTrainerSamples(){
-		numberOfTrainedSamples=0;
+
+	public void returnProcessedBatch(DataBatch databatch){
+		vRAM.add(databatch);
+	}
+
+
+	public void testModel(TestModelEvent testModelEvent) {
+		Model model=testModelEvent.getValue();
+		double chance = model.getStudent().getStatus()==Student.Degree.MSc ? 0.6 : 0.8; // MSC : PHD
+
+		model.changeResults( (Math.random() <= chance) ? Model.Results.Good : Model.Results.Bad );
+		MessageBusImpl.getInstance().complete(testModelEvent, model);
 	}
 	
-	public Event<Model> getLastEvent(){
-		return modelEventsQueue.poll();
-	}
 
-	public void addTovRAM(DataBatch databatch){
-			vRAM.add(databatch);
-	}
+	// private void sendNextBatches() {
+	// 	DataBatch dataBatch;
+	// 	cluster.sendBatchesForProcessing(this, dataBatch);
+	// }
 
+
+	// public void returnProcessedBatch(DataBatch batch) {
+	// 	processBatches.add(batch);
+	// }
+
+
+	// public void resetNumberOfTrainerSamples(){
+	// 	numberOfTrainedSamples = 0;
+	// }
+	
+
+	// public Event<Model> getLastEvent(){
+	// 	return modelEventsQueue.poll();
+	// }
+
+
+	/**
+	 * @inv processedBatchesNum >= 0
+	 */
+	// public void finishTrainingBatch() {
+	// 	--storedProcessedBatchesNumber;
+	// }
 }

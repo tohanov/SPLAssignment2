@@ -17,24 +17,6 @@ public class CPUService extends MicroService {
 
     private CPU cpu;
 
-    // public CPUService(String name,int cores, Cluster cluster) {
-    //     super(name);
-    //     cpu=new CPU(cores, cluster);
-
-
-    // }
-
-
-
-    @Override
-    protected void initialize() {
-        
-        subscribeBroadcast(TickBroadcast.class, (message)->{
-            cpu.tickCallback();
-        });
-
-    }
-
 
 	// region for serialization from json
 	private static int cpuCounter = 0;
@@ -46,4 +28,24 @@ public class CPUService extends MicroService {
 		++cpuCounter;
 	}
 	// endregion for serialization from json
+
+
+    @Override
+    protected void initialize() {
+        
+        subscribeBroadcast(TickBroadcast.class, (tickBroadcast)->{
+            cpu.tickCallback();
+
+			// if (tickBroadcast.isLast()) {
+
+			// 	// TODO: remove debug block
+			// 	synchronized (System.out) {
+			// 		System.out.println("[*] " + getName() + ": got LAST tick");
+			// 	}
+
+			// 	terminate();
+			// }
+        });
+
+    }
 }

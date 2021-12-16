@@ -22,50 +22,14 @@ public class Model {
 		Bad
 	}
 
+
 	private String name;
 	private Data data;
 	private Student student;
 	private Status status;
 	private Results results;
 
-	public Model(String name, Data data, Student student){
-		this.name=name;
-		this.data=data;
-		this.student=student;
-		status=Status.PreTrained;
-		results=Results.None;
 
-	}
-
-	public String getName() {
-        return name;
-    }
-	public Status getStatus(){
-		return status;
-	}
-
-	public void changeStatus(Status newStatus){
-		status=newStatus;
-	}
-
-	public Results getResults(){
-		return results;
-	}
-
-	public void changeResults(Results newResult){
-		results=newResult;
-	}
-
-	public Data getData(){
-		return data;
-	}
-
-	public Student getStudent(){
-		return student;
-	}
-
-	
-	
 	// region for serialization from json
 	public Model(String _name, String _dataType, int _size, Student _student) {
 		name = _name;
@@ -76,9 +40,58 @@ public class Model {
 		student = _student;
 	}
 
+
 	public Model(Map<String,Object> _model, Student _student) {
 		this((String)_model.get("name"), (String)_model.get("type"), ((Double)_model.get("size")).intValue(), _student);
 	}
 	// endregion for serialization from json
-    
+
+
+	public String getName() {
+        return name;
+    }
+
+
+	public Status getStatus(){
+		return status;
+	}
+
+
+	// public void changeStatus(Status newStatus){
+	// 	status=newStatus;
+	// }
+
+
+	public Results getResults(){
+		return results;
+	}
+
+
+	public void changeResults(Results newResult){
+		results=newResult;
+	}
+
+
+	public Data getData(){
+		return data;
+	}
+
+
+	public Student getStudent(){
+		return student;
+	}
+
+
+	public void advanceStatus() {
+		switch (status) {
+			case PreTrained:
+				status = Status.Training;
+				break;
+			case Training:
+				status = Status.Trained;
+				break;
+			default: // case Trained:
+				status = Status.Tested;
+		}
+	}
 }

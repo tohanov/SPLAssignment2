@@ -13,17 +13,14 @@ import java.util.concurrent.TimeUnit;
 public class Future<T> {
 
 	private T result;
-	// private boolean isResolved;
-	// private Object isResolvedLock;
 	private Object resultLock;
+
 
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
 	public Future() {
 		result = null;
-		// isResolved = false;
-		// isResolvedLock = new Object();
 		resultLock=new Object();
 	}
 	
@@ -49,11 +46,11 @@ public class Future<T> {
 	 * @post this.result == _result
      */
 	public void resolve (T _result) {
+
 		synchronized (resultLock) {
 			this.result = _result;
+
 			resultLock.notifyAll();
-			// isResolved = true;
-			// isResolvedLock.notifyAll();
 		}
 	}
 	
@@ -63,9 +60,9 @@ public class Future<T> {
      */
 	public boolean isDone() {
 		//TODO: implement this.
-		synchronized (resultLock) {
+		// synchronized (resultLock) {
 			return result != null;
-		}
+		// }
 	}
 	
 
@@ -87,7 +84,9 @@ public class Future<T> {
 				try {
 					resultLock.wait(unit.toMillis(timeout));
 				}
-				catch (InterruptedException exception) { }
+				catch (InterruptedException exception) {
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 

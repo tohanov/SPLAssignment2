@@ -27,8 +27,8 @@ import com.google.gson.internal.LinkedTreeMap;
 public class CRMSRunner {
     public static void main(String[] args) {
 
-		String inputFilePath = "C:\\Users\\USER\\OneDrive\\Desktop\\SPL\\SPLAssignment2\\example_input.json";
-		String outputFilePath = inputFilePath.substring(0, inputFilePath.lastIndexOf('\\') + 1) + "output.json";
+		String inputFilePath = "C:\\Users\\USER\\OneDrive\\Desktop\\SPL\\SPLAssignment2\\example_input.json"; // TODO: remove
+		String outputFilePath = inputFilePath.substring(0, inputFilePath.lastIndexOf('\\') + 1) + "output.json"; // TODO: move to after reading from args
 
 		// read config file
 		DeserializedJsonParser parser = deserializeConfigFile(inputFilePath); // TODO: remove debug line
@@ -41,8 +41,13 @@ public class CRMSRunner {
 		
 		// Start threads
 		for (MicroService microService : parser.getMicroServices()) {
-			new Thread(microService).start();
+			synchronized (microService) {
+				new Thread(microService).start();
+				try { microService.wait(); }
+				catch (InterruptedException ie) { }
+			}
 		}
+		
 		Thread timeServiceThread = new Thread(parser.getTimeService());
 		timeServiceThread.start();
 
@@ -53,6 +58,10 @@ public class CRMSRunner {
 		}
 		catch (InterruptedException e) { 
 			synchronizedPrintStackTrace(e); 
+		}
+
+		for (MicroService microService : parser.getMicroServices()) {
+			new Thread(microService).start();
 		}
 
 		// output a json file form statistics object of cluster
