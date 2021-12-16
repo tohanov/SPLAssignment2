@@ -32,4 +32,11 @@ public class ConfrenceInformation {
         return successfulModels;
     }
     
+    @Override
+    public String toString(){
+        String output=" name of conference= "+name+", date of conference= "+date+"\n the successful models are: "+successfulModels;
+
+        return output;
+
+    }
 }

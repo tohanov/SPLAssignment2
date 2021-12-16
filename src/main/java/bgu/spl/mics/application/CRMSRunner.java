@@ -97,4 +97,10 @@ public class CRMSRunner {
 	public static void synchronizedPrintStackTrace(Exception exception) {
 		synchronized (System.out) { exception.printStackTrace(); }
 	}
+
+	public static void synchronizedSyso(String output){
+		synchronized(System.out){
+			System.out.println(output);
+		}
+	}
 }

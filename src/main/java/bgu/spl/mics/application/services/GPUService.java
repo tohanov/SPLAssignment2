@@ -14,6 +14,7 @@ import bgu.spl.mics.application.objects.GPU;
 import bgu.spl.mics.application.objects.Model;
 import bgu.spl.mics.application.objects.Student;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import bgu.spl.mics.Broadcast;
@@ -47,20 +48,24 @@ public class GPUService extends MicroService {
     protected void initialize() {
 
 		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> { 
-			Event<Model> handledEvent = gpu.actOnTick();
-			if(handledEvent != null) {
-				MessageBusImpl.getInstance().complete(handledEvent, handledEvent.getValue());
+			ArrayList<Event<Model>> handledEvents = gpu.actOnTick();
+			if(handledEvents != null){
+			 for(Event<Model> toHandle: handledEvents){
+						MessageBusImpl.getInstance().complete(toHandle, toHandle.getValue());
+				}
 			}
 
-			// if (tickBroadcast.isLast()) {
+			if (tickBroadcast.isLast()) {
 
-			// 	// TODO: remove debug block
-			// 	synchronized (System.out) {
-			// 		System.out.println("[*] " + getName() + ": got LAST tick");
-			// 	}
+				gpu.updateTotalGPUTimeUsed();
 
-			// 	terminate();
-			// }
+				// TODO: remove debug block
+				synchronized (System.out) {
+					System.out.println("[*] " + getName() + ": got LAST tick");
+				}
+
+				terminate();
+			}
 		});
 
 		subscribeEvent(TrainModelEvent.class, trainModelEvent -> {
@@ -69,12 +74,13 @@ public class GPUService extends MicroService {
 				System.out.println(getName()+" Received model "+trainModelEvent.getValue().getName() + " for training");
 			}
 
-			gpu.trainModel(trainModelEvent);
+			gpu.addModel(trainModelEvent);
 		});
 		
 		subscribeEvent(TestModelEvent.class, testModelEvent -> {
-			gpu.testModel(testModelEvent);
-			MessageBusImpl.getInstance().complete(testModelEvent, testModelEvent.getValue());
+			if(gpu.addModel(testModelEvent)==false)		// was tested now, needs to be resolved now
+				MessageBusImpl.getInstance().complete(testModelEvent, testModelEvent.getValue());
+			
 		});
     }
 

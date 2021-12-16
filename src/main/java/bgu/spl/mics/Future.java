@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class Future<T> {
 
 	private T result;
-	private Object resultLock;
+//	private Object resultLock;
 
 
 	/**
@@ -21,7 +21,7 @@ public class Future<T> {
 	 */
 	public Future() {
 		result = null;
-		resultLock=new Object();
+	//	resultLock=new Object();
 	}
 	
 	
@@ -47,10 +47,10 @@ public class Future<T> {
      */
 	public void resolve (T _result) {
 
-		synchronized (resultLock) {
+		synchronized (this) {
 			this.result = _result;
 
-			resultLock.notifyAll();
+			this.notifyAll();
 		}
 	}
 	
@@ -79,13 +79,13 @@ public class Future<T> {
      */
 	public T get(long timeout, TimeUnit unit) {
 		//TODO: implement this.
-		synchronized (resultLock) {
+		synchronized (this) {
 			if ( ! isDone()) {
 				try {
-					resultLock.wait(unit.toMillis(timeout));
+					this.wait(unit.toMillis(timeout));
 				}
 				catch (InterruptedException exception) {
-					Thread.currentThread().interrupt();
+					//Thread.currentThread().interrupt();
 				}
 			}
 		}

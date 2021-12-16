@@ -36,15 +36,18 @@ public class CPUService extends MicroService {
         subscribeBroadcast(TickBroadcast.class, (tickBroadcast)->{
             cpu.tickCallback();
 
-			// if (tickBroadcast.isLast()) {
+			if (tickBroadcast.isLast()) {
 
-			// 	// TODO: remove debug block
-			// 	synchronized (System.out) {
-			// 		System.out.println("[*] " + getName() + ": got LAST tick");
-			// 	}
+				cpu.updateTotalCPUTimeUsed();
 
-			// 	terminate();
-			// }
+
+				// TODO: remove debug block
+				synchronized (System.out) {
+					System.out.println("[*] " + getName() + ": got LAST tick");
+				}
+
+				terminate();
+			}
         });
 
     }

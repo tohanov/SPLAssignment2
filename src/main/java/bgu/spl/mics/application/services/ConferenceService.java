@@ -31,12 +31,24 @@ public class ConferenceService extends MicroService {
                 uploadConferenceInformation();
                 terminate();
             }
+
+            if (tickBroadcast.isLast()) {
+
+				// TODO: remove debug block
+				synchronized (System.out) {
+					System.out.println("[*] " + getName() + ": got LAST tick");
+				}
+
+				terminate();
+			}
+
         } );
 
         subscribeEvent(PublishResultsEvent.class, (message)->{
             Model m=message.getValue();
             conference.addSuccessfulModel(m);
 
+            
         });
     }
 

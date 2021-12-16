@@ -23,6 +23,7 @@ public class CPU {
     private Cluster cluster;
     private int ticksToCompletion;
 	private int weight; // TODO complete for comparator
+    private int cpuTimeUsed;
 
 
 	// region for serialization from json
@@ -32,6 +33,7 @@ public class CPU {
         cluster = Cluster.getInstance();
         cluster.registerCPU(this);
         ticksToCompletion=0;
+        cpuTimeUsed=0;
 	}
 	// endregion for serialization from json
 
@@ -80,6 +82,7 @@ public class CPU {
             // }
 
             --ticksToCompletion;
+            ++cpuTimeUsed;
 
             synchronized(System.out) {
                 System.out.println("\n[*] CPU cores=" + cores +
@@ -138,6 +141,11 @@ public class CPU {
 
     public int getTickToCompletion(){
         return ticksToCompletion;
+    }
+
+
+    public void updateTotalCPUTimeUsed() {
+        cluster.updateTotalCPUTimeUsed(cpuTimeUsed);
     }
 
 	

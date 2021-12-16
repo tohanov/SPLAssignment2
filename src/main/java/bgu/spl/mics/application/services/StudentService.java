@@ -8,9 +8,10 @@ import java.util.Map;
 
 import bgu.spl.mics.Future;
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.CRMSRunner;
 import bgu.spl.mics.application.messages.PublishConferenceBroadcast;
 import bgu.spl.mics.application.messages.PublishResultsEvent;
-import bgu.spl.mics.application.messages.SystemStartupBroadcast;
+//import bgu.spl.mics.application.messages.SystemStartupBroadcast;
 import bgu.spl.mics.application.messages.TestModelEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
@@ -65,56 +66,52 @@ public class StudentService extends MicroService {
     @Override
     protected void initialize() {
 	
-		subscribeBroadcast(TickBroadcast.class, startupBroadcast -> {
+		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
 			if (waitingFuture != null) {
 				if (waitingFuture.isDone()) {
 					Model currentModel = waitingFuture.get();
 					if (currentModel.getStatus() == Status.Trained) {
 						/* currentModel =  */sendEvent(new TestModelEvent(currentModel)).get();
+
+						
 						if (currentModel.getResults() == Model.Results.Good) {
-							sendEvent(new PublishResultsEvent(currentModel));
+							sendEvent(new PublishResultsEvent(currentModel));						
 						}
+
+						waitingFuture=null;
+
+						if (modelsIterator.hasNext()) { // waitingFuture == null
+							waitingFuture = sendEvent(new TrainModelEvent(modelsIterator.next()));
+						
+							//TODO: remove debug
+							synchronized(System.out){
+								System.out.println(getName()+" Sending model "+currentModel.getName());
+							}
+
+						}
+					
 					}
 				}
 			}
-			else if (modelsIterator.hasNext()) { // waitingFuture == null
-				waitingFuture = sendEvent(new TrainModelEvent(modelsIterator.next()));
+			else if (/*!Thread.currentThread().isInterrupted() && */ modelsIterator.hasNext()) { // waitingFuture == null
+					Model currentModel=modelsIterator.next();
+					waitingFuture = sendEvent(new TrainModelEvent(currentModel));
+					//TODO: remove debug
+					synchronized(System.out){
+						System.out.println(getName()+" Sending model "+currentModel.getName());
+					}
+				}
+
+			if (tickBroadcast.isLast()) {
+
+				// TODO: remove debug block
+				CRMSRunner.synchronizedSyso("student "+getName()+" publications= "+student.getPublications()+" papers read= "+student.getPapersRead()+"\n");
+				synchronized (System.out) {
+					System.out.println("[*] " + getName() + ": got LAST tick");
+				}
+
+				terminate();
 			}
-
-
-			// while ( ! Thread.currentThread().isInterrupted() && modelsIterator.hasNext()) {
-			// 	Model currentModel = modelsIterator.next();
-
-			// 	Future<Model> trainFuture = sendEvent(new TrainModelEvent(currentModel));
-
-			// 	// TODO: remove debug
-			// 	synchronized(System.out) {
-			// 		System.out.println(getName() + " Sending model " + currentModel.getName() + " for training");
-			// 	}
-
-			// 	trainFuture.get();
-
-			// 	if (Thread.currentThread().isInterrupted()) {
-			// 		break;
-			// 	}
-
-			// 	Future<Model> testFuture = sendEvent(new TestModelEvent(currentModel));
-
-			// 	// TODO: remove debug
-			// 	synchronized(System.out) {
-			// 		System.out.println(getName() + " Sending model " + currentModel.getName() + " for testing");
-			// 	}
-
-			// 	testFuture.get();
-
-			// 	if (Thread.currentThread().isInterrupted()) {
-			// 		break;
-			// 	}
-
-			// 	if(currentModel.getResults() == Model.Results.Good) {
-			// 		sendEvent(new PublishResultsEvent(currentModel));
-			// 	}
-			// }
 		});
 
 		subscribeBroadcast(PublishConferenceBroadcast.class, message->{ // TODO: move into student object's function
@@ -127,6 +124,8 @@ public class StudentService extends MicroService {
 
 		});
     }
+
+
 
 			// if(currentModel.getStatus()==(Model.Status.PreTrained)){
 			// 	currentModel.changeStatus(Model.Status.Training);

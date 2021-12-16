@@ -30,20 +30,20 @@
     //         ]
 
     //     },
-    //     {
-    //         "name": "Zazu",
-    //         "department": "EE",            
-    //         "status": "PhD",
-    //         "models":
-    //         [
-    //             {
-    //                 "name": "VIT",
-    //                 "type": "images",
-    //                 "size": 100000000
-    //             }
-    //         ]
+        {
+            "name": "Zazu",
+            "department": "EE",            
+            "status": "PhD",
+            "models":
+             [
+            //     {
+            //         "name": "VIT",
+            //         "type": "images",
+            //         "size": 100000000
+            //     }
+             ]
 
-    //     },
+        },
     //     {
     //         "name": "Pumba",
     //         "department": "Computer Science",            
@@ -136,12 +136,12 @@
     "CPUS": [32,32,32,16,16,16,16],
     "Conferences":
     [
-        {"name": "ICML", "date": 2000},
-        {"name": "NeurIPS", "date": 2500},
-        {"name": "CVPR", "date": 3000},
-        {"name": "ECCV", "date": 4000},
-        {"name": "AISTATS", "date": 5000}
+        {"name": "ICML", "date": 19},
+        {"name": "NeurIPS", "date": 2000},
+        {"name": "CVPR", "date": 2000},
+        {"name": "ECCV", "date": 2000},
+        {"name": "AISTATS", "date": 2000}
     ],
     "TickTime": 10, // 50,
-    "Duration": 20 // 5500
+    "Duration": 24 // 5500
 }

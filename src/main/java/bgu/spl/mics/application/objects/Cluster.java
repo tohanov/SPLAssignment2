@@ -12,6 +12,7 @@ import java.util.PriorityQueue;
 
 import com.google.gson.internal.LinkedTreeMap;
 
+import bgu.spl.mics.application.CRMSRunner;
 import bgu.spl.mics.application.objects.Data.Type;
 // import bgu.spl.mics.application.objects.DataBatch;
 
@@ -32,6 +33,7 @@ public class Cluster {
 	// region According to instructions
 	private Collection<GPU> GPUS;
 	private Collection<CPU> CPUS;
+	private HashMap<Data.Type,PriorityQueue<CPU>> CPUS_PriorityQueues;
 	private HashMap<GPU,LinkedList<DataBatch>> databatchQueues;
 	// TODO add statistics
 	private LinkedTreeMap<String,Object> Statistics = new LinkedTreeMap<>();
@@ -41,6 +43,8 @@ public class Cluster {
 	// region
 	// private int availableCPUSNumber;
 	private ArrayList<ConfrenceInformation> finishedConferences;
+	private int totalCPUTimeUsed;
+	private int totalGPUTimeUsed;
 	// endregion
 
 	/**
@@ -52,15 +56,27 @@ public class Cluster {
 
 	private Cluster() {
 		GPUS = new ArrayList<>();
-		CPUS = new PriorityQueue<>(new Comparator<CPU>() {
+		CPUS=new ArrayList<>();
+		CPUS_PriorityQueues=new HashMap<Data.Type,PriorityQueue<CPU>>();
+
+		for(Data.Type type: new Data.Type[] {Data.Type.Images, Data.Type.Text, Data.Type.Tabular}){
+			CPUS_PriorityQueues.put(type,new PriorityQueue<>(new Comparator<CPU>() {
 			
 			@Override
 			public int compare(CPU first, CPU second) {
-				return first.getTickToCompletion()-second.getTickToCompletion();
+				int a =( first.getTickToCompletion()+first.calculateProcessingTime(type) )-
+					   ( second.getTickToCompletion() + second.calculateProcessingTime(type) );
+
+				return a;
+				
 			}
 			
-		});
-		
+		}));
+	}
+
+		finishedConferences=new ArrayList<>();
+		totalCPUTimeUsed=0;
+		totalGPUTimeUsed=0;
 
 		
 		// //TODO: check if needed
@@ -87,6 +103,9 @@ public class Cluster {
 	public void registerCPU(CPU cpu) {
 		synchronized(CPUS) {
 			CPUS.add(cpu);
+
+			for(PriorityQueue<CPU> CPU_Queue: CPUS_PriorityQueues.values())
+				CPU_Queue.add(cpu);
 		}
 	}
 
@@ -145,9 +164,10 @@ public class Cluster {
 	// }
 
 	public void sendBatchForProcessing(DataBatch dataBatch) {
-		CPU minimalWorkCPU=((PriorityQueue<CPU>)CPUS).poll();
+		PriorityQueue<CPU> q = CPUS_PriorityQueues.get(dataBatch.getData().getType());
+		CPU minimalWorkCPU=q.poll();
 		minimalWorkCPU.addBatch(dataBatch);
-		CPUS.add(minimalWorkCPU);
+		q.add(minimalWorkCPU);
 	}
 
 
@@ -171,7 +191,22 @@ public class Cluster {
 
     public void uploadConferenceInformation(ConfrenceInformation conference) {
 		finishedConferences.add(conference);
+
+		//TODO: remove debug
+		CRMSRunner.synchronizedSyso(conference.toString());
     }
 
+	public synchronized void updateTotalCPUTimeUsed(int toAdd){
+		totalCPUTimeUsed+=toAdd;
+	}
+
+	public synchronized void updateTotalGPUTimeUsed(int toAdd){
+		totalGPUTimeUsed+=toAdd;
+	}
 	
+	@Override
+	public String toString(){
+		String output=" cpuTimeUsed= "+totalCPUTimeUsed+"\ngpuTimeUsed= "+totalGPUTimeUsed;
+		return output;
+	}
 }

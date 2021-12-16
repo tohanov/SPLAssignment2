@@ -14,6 +14,7 @@ import org.junit.experimental.theories.Theories;
 
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.application.services.GPUService;
+import bgu.spl.mics.application.CRMSRunner;
 import bgu.spl.mics.application.messages.TestModelEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
@@ -50,6 +51,8 @@ public class GPU {
 	private byte emptyVRAM;	// according to the type of the gpu
 	private int currentBatchIndex;
 	private int numberOfTrainedSamples;
+	private int gpuTimeUsed;
+
 	// endregion Added fields
 
 
@@ -74,6 +77,7 @@ public class GPU {
 
 		modelEventsQueue = new ArrayDeque<>();
 		vRAM = new ArrayDeque<>();
+		gpuTimeUsed=0;
     }
 
 
@@ -93,23 +97,51 @@ public class GPU {
 	// endregion for serialization from json
 
 
-	public void trainModel(Event<Model> modelEvent) {
-		modelEventsQueue.add(modelEvent);
+	public boolean addModel(Event<Model> modelEvent) {
+		if(modelEventsQueue.isEmpty() && modelEvent.getValue().getStatus()==Model.Status.Trained){
+			testModel((TestModelEvent) modelEvent);
+		 
+			return false;
+		}
+		else{
+			modelEventsQueue.add(modelEvent);
+			return true;
+		}
 	}
 
 
-	public Event<Model> actOnTick() {
+	public ArrayList<Event<Model>> actOnTick() {
+		
+		
+
 		if( ! modelEventsQueue.isEmpty()) {
 			if (modelEventsQueue.peek().getValue().getStatus() == Status.PreTrained) {// (trainingInProgress==false) {
 				initBatchTraining();
 			}
+			
+			 if(modelEventsQueue.peek().getValue().getStatus() == Status.Training) {
 
-			else if(modelEventsQueue.peek().getValue().getStatus() == Status.Training) {
 				if (train() == true) { // train on this tick and see if finished training
-					return modelEventsQueue.poll();	// remove from vRAM
+
+					ArrayList<Event<Model>> eventsToHandle=new ArrayList<>();
+
+					eventsToHandle.add(modelEventsQueue.poll());	
+					
+					while(!modelEventsQueue.isEmpty() && modelEventsQueue.peek().getValue().getStatus()==Model.Status.Trained){	//modelEventsQueue.peek()==testModelEvent(...)
+						testModel((TestModelEvent) modelEventsQueue.peek());
+						eventsToHandle.add(modelEventsQueue.poll());
+					}
+
+					return eventsToHandle;
+
 				}
 			}
+
+
 		}
+
+		
+		
 		// TODO: split to smaller functions (queries + actions)
 		return null;
 	}
@@ -156,6 +188,8 @@ public class GPU {
 		}	
 
 		if( ! vRAM.isEmpty()){
+
+			++gpuTimeUsed;
 			DataBatch batch=vRAM.peek();
 
 			if( ! batch.isInTraining()){
@@ -167,7 +201,10 @@ public class GPU {
 				numberOfTrainedSamples+=1000;
 				++emptyVRAM;
 
-				return hasFinishedTraining();
+				if(hasFinishedTraining()){
+					model.advanceStatus();		// change status to "Trained"
+					return true;
+				}
 			}
 		}
 
@@ -186,11 +223,21 @@ public class GPU {
 
 
 	public void testModel(TestModelEvent testModelEvent) {
+	
 		Model model=testModelEvent.getValue();
 		double chance = model.getStudent().getStatus()==Student.Degree.MSc ? 0.6 : 0.8; // MSC : PHD
 
 		model.changeResults( (Math.random() <= chance) ? Model.Results.Good : Model.Results.Bad );
-		MessageBusImpl.getInstance().complete(testModelEvent, model);
+		model.advanceStatus();		// change status to "Tested"
+
+		//TODO:remove debug
+		CRMSRunner.synchronizedSyso("testing model "+model.getName()+", result is: "+model.getResults()+" status is: "+model.getStatus());
+		//MessageBusImpl.getInstance().complete(testModelEvent, model);
+	}
+
+
+	public void updateTotalGPUTimeUsed() {
+		 cluster.updateTotalGPUTimeUsed(gpuTimeUsed);;
 	}
 	
 

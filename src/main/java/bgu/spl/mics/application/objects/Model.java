@@ -81,6 +81,10 @@ public class Model {
 		return student;
 	}
 
+	@Override
+	public String toString(){
+		return getName();
+	}
 
 	public void advanceStatus() {
 		switch (status) {

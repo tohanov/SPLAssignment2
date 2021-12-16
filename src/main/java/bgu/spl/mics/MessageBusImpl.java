@@ -5,12 +5,15 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
+import bgu.spl.mics.application.CRMSRunner;
 import bgu.spl.mics.application.messages.PublishConferenceBroadcast;
 import bgu.spl.mics.application.messages.PublishResultsEvent;
 import bgu.spl.mics.application.messages.TestModelEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
+import bgu.spl.mics.application.objects.Cluster;
 import bgu.spl.mics.application.objects.Model;
+import bgu.spl.mics.application.services.TimeService;
 import bgu.spl.mics.example.messages.ExampleEvent;
 
 
@@ -97,12 +100,12 @@ public class MessageBusImpl implements MessageBus {
 	}
 
 
-	public void completeAll(){ // TODO : rethink
-		Model m=new Model("", null, null);
-		m.changeResults(Model.Results.Bad);
-
-		for(Future future: futureHashMap.values()){
-			future.resolve(m);
+	private void completeAll(){ // TODO : rethink
+		
+		for(Future<? extends Object> future: futureHashMap.values()){
+			synchronized(future){
+				future.notifyAll();
+			}
 		}
 	}
 
@@ -203,6 +206,12 @@ public class MessageBusImpl implements MessageBus {
 					ls.remove(m);
 				}
 			}
+		}
+
+		if(m instanceof TimeService){
+			completeAll();
+			//TODO: remove debug
+			CRMSRunner.synchronizedSyso(Cluster.getInstance().toString());
 		}
 	}
 

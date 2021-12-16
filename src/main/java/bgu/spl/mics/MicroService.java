@@ -29,7 +29,7 @@ public abstract class MicroService implements Runnable {
 
     private boolean terminated = false;
     private final String name;
-    private MessageBusImpl messageBus;
+    private MessageBus messageBus;
     private HashMap<Class<? extends Message>, Callback<? extends Message>> callbackHashMap;
 	private ConcurrentLinkedQueue<Callback<Message>> callbackQueue;
 
@@ -191,7 +191,7 @@ public abstract class MicroService implements Runnable {
 		// for notifying of finishing initialization
 		synchronized (this) { this.notifyAll(); }
 
-        while (!terminated && !Thread.currentThread().isInterrupted()) {
+        while (!terminated/*  && !Thread.currentThread().isInterrupted() */) {
 			try {
 				Message message = messageBus.awaitMessage(this);
 				Class<? extends Message> messageClass = message.getClass();
@@ -209,7 +209,7 @@ public abstract class MicroService implements Runnable {
 				}
 			}
         }
-
+        
 		MessageBusImpl.getInstance().unregister(this);
     }
 }

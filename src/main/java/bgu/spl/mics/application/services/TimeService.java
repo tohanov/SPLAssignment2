@@ -5,8 +5,6 @@ import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.CRMSRunner;
-import bgu.spl.mics.application.messages.SystemStartupBroadcast;
-
 import java.text.MessageFormat;
 import java.util.Timer;
 
@@ -37,9 +35,8 @@ public class TimeService extends MicroService {
 	@Override
 	protected void initialize() {
 		// TODO Implement this
-		TickBroadcast tick = new TickBroadcast(/* false */);
+		TickBroadcast tick = new TickBroadcast(false);
 		MessageBusImpl messageBus = MessageBusImpl.getInstance();
-		messageBus.sendBroadcast(new SystemStartupBroadcast()); // TODO : delete
 
 		try {
 			// for ( ; duration > 1; --duration) {
@@ -55,7 +52,7 @@ public class TimeService extends MicroService {
 
 			// TODO : move last tick into the loop as well
 			Thread.sleep(tickTime);
-			messageBus.sendBroadcast(new TickBroadcast(/* true */));
+			messageBus.sendBroadcast(new TickBroadcast(true));
 			
 			// TODO: remove debug block
 			synchronized (System.out) {
@@ -66,6 +63,8 @@ public class TimeService extends MicroService {
 			CRMSRunner.synchronizedPrintStackTrace(e); 
 		}
 		
+		
 		terminate(); // not entering the run() loop
 	}
+	
 }
