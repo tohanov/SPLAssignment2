@@ -150,10 +150,11 @@ public class MessageBusImpl implements MessageBus {
 					broadcastAcceptingQueue = microServicesHashMap.get(subscribedMicroService);
 					microServicesHashMapRWL.readLock().unlock();
 			//	}
-
-				synchronized (broadcastAcceptingQueue) {
-					broadcastAcceptingQueue.add(broadcast);
-					broadcastAcceptingQueue.notifyAll();
+				if (broadcastAcceptingQueue != null) { // TODO: check if needed in case the microservice got unregistered in between us locking for read on microServicesHashMap and us running getting
+					synchronized (broadcastAcceptingQueue) {
+						broadcastAcceptingQueue.add(broadcast);
+						broadcastAcceptingQueue.notifyAll();
+					}
 				}
 			}
 		}
@@ -190,17 +191,20 @@ public class MessageBusImpl implements MessageBus {
 
 		Future<T> eventFuture = new Future<>();
 		// TODO: maybe change synchronization to be on microservice
-		synchronized (chosenMSEventQueue) {
-			chosenMSEventQueue.add(event);	//adds the message to the chosen micro-service Queue
-			// TODO: move the futureHashMap synchronized block out of the eventQueue block?
-			//synchronized (futureHashMap) {
-				futureHashMapRWL.writeLock().lock();
-				futureHashMap.put(event, eventFuture);
-				futureHashMapRWL.writeLock().unlock();
+		
+		if (chosenMSEventQueue != null) { // TODO: check if needed in case the microservice got unregistered in between us locking for read on microServicesHashMap and us running getting
+			synchronized (chosenMSEventQueue) {
+				chosenMSEventQueue.add(event);	//adds the message to the chosen micro-service Queue
+				// TODO: move the futureHashMap synchronized block out of the eventQueue block?
+				//synchronized (futureHashMap) {
+					futureHashMapRWL.writeLock().lock();
+					futureHashMap.put(event, eventFuture);
+					futureHashMapRWL.writeLock().unlock();
 
-			//}
+				//}
 
-			chosenMSEventQueue.notify(); // only one thread waiting for events on each queue
+				chosenMSEventQueue.notify(); // only one thread waiting for events on each queue
+			}
 		}
 		// chosenMicroService.notify();
 		return eventFuture;
