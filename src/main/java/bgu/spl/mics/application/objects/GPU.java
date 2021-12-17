@@ -45,7 +45,7 @@ public class GPU {
 	// region Added fields
     // private GPUService service;
 	// private Collection<DataBatch> processedBatches;
-	private ArrayDeque<Event<Model>> modelEventsQueue;
+	private LinkedList<Event<Model>> modelEventsQueue;
 	private ArrayDeque<DataBatch> vRAM;
 	private final int trainingDelay; // according to the type of the gpu
 	private byte emptyVRAM;	// according to the type of the gpu
@@ -75,7 +75,7 @@ public class GPU {
 				trainingDelay = 1;
 		}
 
-		modelEventsQueue = new ArrayDeque<>();
+		modelEventsQueue = new LinkedList<>();
 		vRAM = new ArrayDeque<>();
 		gpuTimeUsed=0;
     }
@@ -98,15 +98,20 @@ public class GPU {
 
 
 	public boolean addModel(Event<Model> modelEvent) {
-		if(modelEventsQueue.isEmpty() && modelEvent.getValue().getStatus()==Model.Status.Trained){
+		if(modelEventsQueue.isEmpty() && modelEvent.getValue().getStatus()==Model.Status.Trained){	//if TestModelEvent execute immediately
 			testModel((TestModelEvent) modelEvent);
 		 
-			return false;
+			return false;	//nothing added to queue
 		}
-		else{
+		else if(modelEvent.getValue().getStatus()==Model.Status.Trained){
+			modelEventsQueue.add(1, modelEvent);
+		}
+		
+		else{	// if trainModelEvent
 			modelEventsQueue.add(modelEvent);
-			return true;
 		}
+		
+		return true;
 	}
 
 

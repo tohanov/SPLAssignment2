@@ -210,6 +210,8 @@ public class Cluster {
 		output.put("cpuTimeUsed", totalCPUTimeUsed);
 		output.put("gpuTimeUsed", totalGPUTimeUsed);
 		output.put("batchesProcessed", totalBatchesProcessed);
+		output.put("Batches_CPUTime_Ratio",((double) totalBatchesProcessed.get())/totalCPUTimeUsed.get());
+		output.put("Batches_GPUTime_Ratio",((double) totalBatchesProcessed.get())/totalGPUTimeUsed.get());
 		
 		return output;
 	}
