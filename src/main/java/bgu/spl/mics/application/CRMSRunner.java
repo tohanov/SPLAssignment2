@@ -27,7 +27,7 @@ import com.google.gson.internal.LinkedTreeMap;
 public class CRMSRunner {
     public static void main(String[] args) {
 
-		String inputFilePath = "C:\\Users\\USER\\OneDrive\\Desktop\\SPL\\SPLAssignment2\\example_input.json"; // TODO: remove
+		String inputFilePath = "/mnt/c/Users/SB/Desktop/SPL/Assignment 2/example_input.json"; // TODO: remove
 		String outputFilePath = inputFilePath.substring(0, inputFilePath.lastIndexOf('\\') + 1) + "output.json"; // TODO: move to after reading from args
 
 		// read config file

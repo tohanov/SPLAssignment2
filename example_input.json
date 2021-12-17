@@ -143,5 +143,5 @@
         {"name": "AISTATS", "date": 19}
     ],
     "TickTime": 10, // 50,
-    "Duration": 24 // 5500
+    "Duration": 24 //5500
 }

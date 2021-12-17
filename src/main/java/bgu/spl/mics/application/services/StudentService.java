@@ -71,7 +71,7 @@ public class StudentService extends MicroService {
 				if (waitingFuture.isDone()) {
 					Model currentModel = waitingFuture.get();
 					if (currentModel.getStatus() == Status.Trained) {
-						/* currentModel =  */sendEvent(new TestModelEvent(currentModel)).get();
+						/* currentModel =  */sendEvent(new TestModelEvent(currentModel)).get(); // TODO: check what happens if returns null (if could happen)
 
 						
 						if (currentModel.getResults() == Model.Results.Good) {
