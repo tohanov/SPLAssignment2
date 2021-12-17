@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -32,10 +33,19 @@ public class MessageBusImpl implements MessageBus {
 		private static final MessageBusImpl instance = new MessageBusImpl();
 	}
 	
+	private class LockPair<T> {
+		private T object; 
+		private ReentrantReadWriteLock lock;
+
+		private LockPair (T _object, ReentrantReadWriteLock _lock) {
+			object = _object;
+			lock = _lock;
+		}
+	}
 	
 	private HashMap<MicroService,ArrayDeque<Message>> microServicesHashMap;
-	private HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> broadcastHashMap; 
-	private HashMap<Class<? extends Message>,LinkedList<MicroService>> eventHashMap;
+	private HashMap<Class<? extends Broadcast>,LockPair<LinkedList<MicroService>>> broadcastHashMap; 
+	private HashMap<Class<? extends Message>,LockPair<LinkedList<MicroService>>> eventHashMap;
 	private HashMap<Event<? extends Object>,Future<? extends Object>> futureHashMap;
 	// private HashMap<LinkedList<MicroService>,ReentrantReadWriteLock> broadcastListLocksMap;
 
@@ -47,14 +57,13 @@ public class MessageBusImpl implements MessageBus {
 		microServicesHashMap = new HashMap<>();
 		
 		broadcastHashMap = new HashMap<>();
-		broadcastHashMap.put(PublishConferenceBroadcast.class, new LinkedList<>());
-		broadcastHashMap.put(TickBroadcast.class, new LinkedList<>());
+		broadcastHashMap.put(PublishConferenceBroadcast.class, new LockPair<>(new LinkedList<>(), new ReentrantReadWriteLock()));
+		broadcastHashMap.put(TickBroadcast.class, new LockPair<>(new LinkedList<>(), new ReentrantReadWriteLock()));
 		
 		eventHashMap = new HashMap<>();
-		eventHashMap.put(PublishResultsEvent.class, new LinkedList<>());
-		eventHashMap.put(TestModelEvent.class, new LinkedList<>());
-		eventHashMap.put(TrainModelEvent.class, new LinkedList<>());
-		// eventHashMap.put(ExampleEvent.class, new LinkedList<>());
+		eventHashMap.put(PublishResultsEvent.class, new LockPair<>(new LinkedList<>(), new ReentrantReadWriteLock()));
+		eventHashMap.put(TestModelEvent.class, new LockPair<>(new LinkedList<>(), new ReentrantReadWriteLock()));
+		eventHashMap.put(TrainModelEvent.class, new LockPair<>(new LinkedList<>(), new ReentrantReadWriteLock()));
 
 		futureHashMap=new HashMap<>();
 
@@ -73,31 +82,38 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> eventType, MicroService subscriberMS) {
-		LinkedList<MicroService> eventSubscribedMicroServices;
+		// LinkedList<MicroService> eventSubscribedMicroServices;
 
 	//	synchronized (eventHashMap) {
-			eventSubscribedMicroServices = eventHashMap.get(eventType);
+		LockPair<LinkedList<MicroService>> pairSubscribed = eventHashMap.get(eventType);
 	//	}
 
-		synchronized (eventSubscribedMicroServices) {
-			eventSubscribedMicroServices.addLast(subscriberMS);
-		}
+		// synchronized (eventSubscribedMicroServices) {
+		// 	eventSubscribedMicroServices.addLast(subscriberMS);
+		// }
+		
+		pairSubscribed.lock.writeLock().lock();
+		pairSubscribed.object.addLast(subscriberMS);
+		pairSubscribed.lock.writeLock().unlock();
 	}
 
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> broadcastType, MicroService subscriberMS) {
-		LinkedList<MicroService> broadcastSubscribedMicroServices;
+		// LinkedList<MicroService> broadcastSubscribedMicroServices;
 		//synchronized (broadcastHashMap) {
 			//broadcastHashMapRWL.readLock().lock();
-			broadcastSubscribedMicroServices = broadcastHashMap.get(broadcastType);
+
+			LockPair<LinkedList<MicroService>> pairSubscribed = broadcastHashMap.get(broadcastType);
 			//broadcastHashMapRWL.readLock().unlock();
 
 		//}
 
-		synchronized (broadcastSubscribedMicroServices) {
-			broadcastSubscribedMicroServices.addLast(subscriberMS);
-		}
+		// synchronized (broadcastSubscribedMicroServices) {
+			pairSubscribed.lock.writeLock().lock();
+			pairSubscribed.object.addLast(subscriberMS);
+			pairSubscribed.lock.writeLock().unlock();
+		// }
 		// synchronized (broadcastListLocksMap) {
 		// 	broadcastListLocksMap.addLast(subscriberMS);
 		// }
@@ -130,56 +146,62 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void sendBroadcast(Broadcast broadcast) {
-		LinkedList<MicroService> broadcastSubscribedMicroServices;
+		// LinkedList<MicroService> broadcastSubscribedMicroServices;
+		// ReentrantReadWriteLock lock;
 		//synchronized (broadcastHashMap) {
 			//broadcastHashMapRWL.readLock().lock();
-			broadcastSubscribedMicroServices = broadcastHashMap.get(broadcast.getClass());
+			LockPair<LinkedList<MicroService>> pairSubscribed = broadcastHashMap.get(broadcast.getClass());
+
+			// broadcastSubscribedMicroServices = pairSubscribed.object;
+			// lock = pairSubscribed.lock;
 			//broadcastHashMapRWL.readLock().unlock();
 
 		//}
 
 		Queue<Message> broadcastAcceptingQueue;
 
-		synchronized (broadcastSubscribedMicroServices) {
+		// synchronized (broadcastSubscribedMicroServices) {
 
 			// TODO: lock to sync with conference unsubsribe requests
-
-			for(MicroService subscribedMicroService : broadcastSubscribedMicroServices) {
+			pairSubscribed.lock.readLock().lock();
+			for(MicroService subscribedMicroService : pairSubscribed.object) {
 				//synchronized (microServicesHashMap) {
 					microServicesHashMapRWL.readLock().lock();
 					broadcastAcceptingQueue = microServicesHashMap.get(subscribedMicroService);
 					microServicesHashMapRWL.readLock().unlock();
 			//	}
 				if (broadcastAcceptingQueue != null) { // TODO: check if needed in case the microservice got unregistered in between us locking for read on microServicesHashMap and us running getting
-					synchronized (broadcastAcceptingQueue) {
+					synchronized (broadcastAcceptingQueue) { // leaving on synchronized because of notifyAll()??
 						broadcastAcceptingQueue.add(broadcast);
 						broadcastAcceptingQueue.notifyAll();
 					}
 				}
 			}
-		}
+			pairSubscribed.lock.readLock().unlock();
+		// }
 	}
 
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> event) {
-		LinkedList<MicroService> eventSubscribedMicroServices;
+		// LinkedList<MicroService> eventSubscribedMicroServices;
 
 	//	synchronized (eventHashMap) {
-			eventSubscribedMicroServices = eventHashMap.get(event.getClass());		//choose microservice
+		LockPair<LinkedList<MicroService>> pairSubscribed = eventHashMap.get(event.getClass());		//choose microservice
 	//	}
 
 		MicroService roundRobinChosenMS;
 
-		synchronized (eventSubscribedMicroServices) {
-			if(eventSubscribedMicroServices.isEmpty())
+		// synchronized (eventSubscribedMicroServices) {
+			pairSubscribed.lock.writeLock().lock();
+			if(pairSubscribed.object.isEmpty())
 				return null;
-
-			// TODO: make synchronized
 		
-			roundRobinChosenMS = eventSubscribedMicroServices.removeFirst();
-			eventSubscribedMicroServices.addLast(roundRobinChosenMS);
-		}
+			roundRobinChosenMS = pairSubscribed.object.removeFirst();
+			pairSubscribed.object.addLast(roundRobinChosenMS);
+			
+			pairSubscribed.lock.writeLock().unlock();
+		// }
 
 		Queue<Message> chosenMSEventQueue;
 		// TODO: use a thread safe queue? so no problems happen with the get query
@@ -230,19 +252,23 @@ public class MessageBusImpl implements MessageBus {
 
 		//}
 		
-		//synchronized (broadcastHashMap) { // TODO: use fast fail iterator functionality??
-			for(LinkedList<MicroService> broadcastSubscribedMSList : broadcastHashMap.values()) {
-				synchronized (broadcastSubscribedMSList) {
-					broadcastSubscribedMSList.remove(msToUnregister);
-				}
+		//synchronized (broadcastHashMap) {
+			for(LockPair<LinkedList<MicroService>> pairSubscribed : broadcastHashMap.values()) {
+				// synchronized (pairSubscribed.lock) {
+					pairSubscribed.lock.writeLock().lock();
+					pairSubscribed.object.remove(msToUnregister);
+					pairSubscribed.lock.writeLock().unlock();
+				// }
 			}
 		//}
 
 	//	synchronized (eventHashMap) {
-			for(LinkedList<MicroService> eventSubscribedMSList : eventHashMap.values()) {
-				synchronized (eventSubscribedMSList) {
-					eventSubscribedMSList.remove(msToUnregister);
-				}
+			for(LockPair<LinkedList<MicroService>> pairSubscribed : eventHashMap.values()) {
+				// synchronized (eventSubscribedMSList) {
+					pairSubscribed.lock.writeLock().lock();
+					pairSubscribed.object.remove(msToUnregister);
+					pairSubscribed.lock.writeLock().unlock();
+				// }
 			}
 	//	}
 
@@ -299,7 +325,7 @@ public class MessageBusImpl implements MessageBus {
 		LinkedList<MicroService> ls;
 
 		//synchronized (broadcastHashMap) {
-			ls = broadcastHashMap.get(type);
+			ls = broadcastHashMap.get(type).object;
 		//}
 
 		if(ls == null)
@@ -315,7 +341,7 @@ public class MessageBusImpl implements MessageBus {
 		LinkedList<MicroService> ls;
 
 		//synchronized (eventHashMap) {
-			ls = eventHashMap.get(type);
+			ls = eventHashMap.get(type).object;
 		//}
 
 		if(ls == null)
