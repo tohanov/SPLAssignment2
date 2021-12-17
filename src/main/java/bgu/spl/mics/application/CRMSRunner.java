@@ -27,7 +27,7 @@ import com.google.gson.internal.LinkedTreeMap;
 public class CRMSRunner {
     public static void main(String[] args) {
 
-		String inputFilePath = "C:\\Users\\USER\\OneDrive\\Desktop\\SPL\\SPLAssignment2\\example_input.json"; // TODO: remove
+		String inputFilePath = "/mnt/c/Users/SB/Desktop/SPL/Assignment 2/example_input.json"; // TODO: remove
 		String outputFilePath = inputFilePath.substring(0, inputFilePath.lastIndexOf('\\') + 1) + "output.json"; // TODO: move to after reading from args
 
 		// read config file
@@ -41,11 +41,11 @@ public class CRMSRunner {
 		
 		// Start threads
 		for (MicroService microService : parser.getMicroServices()) {
-			synchronized (microService) {
-				new Thread(microService).start();
-				try { microService.wait(); }
-				catch (InterruptedException ie) { }
-			}
+		// 	synchronized (microService) {
+		 		new Thread(microService).start();
+		// 		try { microService.wait(); }
+		// 		catch (InterruptedException ie) { }
+		// 	}
 		}
 
 		Thread timeServiceThread = new Thread(parser.getTimeService());

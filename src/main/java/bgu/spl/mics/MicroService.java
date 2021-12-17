@@ -189,7 +189,8 @@ public abstract class MicroService implements Runnable {
         initialize();
 
 		// for notifying of finishing initialization
-		synchronized (this) { this.notifyAll(); }
+		//TODO: readd for sync of first time tick with initializations of microservices
+        //synchronized (this) { this.notifyAll(); }
 
         while (!terminated/*  && !Thread.currentThread().isInterrupted() */) {
 			try {
