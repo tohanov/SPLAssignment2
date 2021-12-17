@@ -194,9 +194,11 @@ public class MessageBusImpl implements MessageBus {
 
 		// synchronized (eventSubscribedMicroServices) {
 			pairSubscribed.lock.writeLock().lock();
-			if(pairSubscribed.object.isEmpty())
+			if(pairSubscribed.object.isEmpty()){
+				
+				pairSubscribed.lock.writeLock().unlock();
 				return null;
-		
+			}
 			roundRobinChosenMS = pairSubscribed.object.removeFirst();
 			pairSubscribed.object.addLast(roundRobinChosenMS);
 			
@@ -276,7 +278,7 @@ public class MessageBusImpl implements MessageBus {
 		if(msToUnregister instanceof TimeService){
 			completeAll();
 			//TODO: remove debug
-			CRMSRunner.synchronizedSyso(Cluster.getInstance().toString());
+			//CRMSRunner.synchronizedSyso(Cluster.getInstance().toString());
 		}
 	}
 

@@ -71,9 +71,11 @@ public class StudentService extends MicroService {
 				if (waitingFuture.isDone()) {
 					Model currentModel = waitingFuture.get();
 					if (currentModel.getStatus() == Status.Trained) {
+						
+						student.addTrainedModel(currentModel);
+						
 						/* currentModel =  */sendEvent(new TestModelEvent(currentModel)).get(); // TODO: check what happens if returns null (if could happen)
 
-						
 						if (currentModel.getResults() == Model.Results.Good) {
 							sendEvent(new PublishResultsEvent(currentModel));						
 						}
@@ -104,8 +106,9 @@ public class StudentService extends MicroService {
 
 			if (tickBroadcast.isLast()) {
 
+				
 				// TODO: remove debug block
-				CRMSRunner.synchronizedSyso("student "+getName()+" publications= "+student.getPublications()+" papers read= "+student.getPapersRead()+"\n");
+			//	CRMSRunner.synchronizedSyso("student "+getName()+" publications= "+student.getPublications()+" papers read= "+student.getPapersRead()+"\n");
 				synchronized (System.out) {
 					System.out.println("[*] " + getName() + ": got LAST tick");
 				}

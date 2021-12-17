@@ -1,5 +1,7 @@
 package bgu.spl.mics.application.objects;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.jar.Attributes.Name;
@@ -24,16 +26,18 @@ public class CPU {
     private int ticksToCompletion;
 	private int weight; // TODO complete for comparator
     private int cpuTimeUsed;
+    private int totalBatchesProcessed;
 
 
 	// region for serialization from json
 	public CPU(int _cores) {
 		cores = _cores;
-        data = new LinkedList<>(); // TODO: make thread-safe?
+        data = new ArrayDeque<>(); // TODO: make thread-safe?
         cluster = Cluster.getInstance();
         cluster.registerCPU(this);
         ticksToCompletion=0;
         cpuTimeUsed=0;
+        totalBatchesProcessed=0;
 	}
 	// endregion for serialization from json
 
@@ -54,25 +58,6 @@ public class CPU {
     }
 
 
-	/**
-     * 
-     * @param toAdd The batch to add
-     * @pre toAdd!=null
-     * @post data.last()=toAdd
-     */
-    public void addBatch(DataBatch toAdd){
-        this.data.add(toAdd);
-
-        ticksToCompletion+=calculateProcessingTime(toAdd.getData().getType());
-
-        synchronized(System.out){
-            System.out.println("CPU with "+cores+" Cores received batch" + 
-                "\nindex "+toAdd.getIndex() +
-                "\nticksToCompletion=" + ticksToCompletion +
-                "\ntype=" + toAdd.getData().getType());
-        }
-
-    }
 
 
 	public void tickCallback() {
@@ -84,35 +69,68 @@ public class CPU {
             --ticksToCompletion;
             ++cpuTimeUsed;
 
-            synchronized(System.out) {
-                System.out.println("\n[*] CPU cores=" + cores +
-                    "\nticksToCompetion=" + ticksToCompletion + 
-                    "\nindex=" + ((LinkedList<DataBatch>) data).peekFirst().getIndex() +
-                    "\n");
-            }
+            // synchronized(System.out) {
+            //     System.out.println("\n[*] CPU cores=" + cores +
+            //         "\nticksToCompetion=" + ticksToCompletion + 
+            //         "\nindex=" + ((ArrayDeque<DataBatch>) data).peekFirst().getIndex() +
+            //         "\n");
+            // }
+            DataBatch batch;
 
-			DataBatch batch = ((LinkedList<DataBatch>)data).peek();
+            synchronized(data){    
+			    batch = ((ArrayDeque<DataBatch>)data).peek(); 
+            }
 
 			if ( ! batch.isInProcessing()) {
 				batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
 			}
 
 			if(batch.process()){
-				cluster.sendProcessedBatchToTraining(removeBatch());
+                ++totalBatchesProcessed;
+				cluster.sendProcessedBatchToTraining(removeBatch());    
 
-                synchronized (System.out) {
-                    System.out.println("\nentered if(batch.process())\n");
-                }
+                // synchronized (System.out) {
+                //     System.out.println("\nentered if(batch.process())\n");
+                // }
 			}
 		}
 	}
 
 
+	/**
+     * 
+     * @param toAdd The batch to add
+     * @pre toAdd!=null
+     * @post data.last()=toAdd
+     */
+    public void addBatch(DataBatch toAdd){
+        synchronized(data){
+            this.data.add(toAdd);
+        }
+
+        ticksToCompletion+=calculateProcessingTime(toAdd.getData().getType());
+
+        // synchronized(System.out){
+        //     System.out.println("CPU with "+cores+" Cores received batch" + 
+        //         "\nindex "+toAdd.getIndex() +
+        //         "\nticksToCompletion=" + ticksToCompletion +
+        //         "\ntype=" + toAdd.getData().getType());
+        // }
+
+    }
+
     /**
      * @post data.size=@pre databatch.size()-1
      */
     public DataBatch removeBatch(){
-        return ((LinkedList<DataBatch>) data).removeFirst();
+        
+        DataBatch removed;
+        
+        synchronized(data){
+            removed = ((ArrayDeque<DataBatch>) data).removeFirst();    
+        }
+
+        return removed;
     }
 
 
@@ -125,7 +143,7 @@ public class CPU {
 
 
     public boolean isCurrentBatchReady(){
-        return ((LinkedList<DataBatch>) data).getFirst().isProcessed();
+        return ((ArrayDeque<DataBatch>) data).getFirst().isProcessed();
     }
 
 
@@ -146,6 +164,10 @@ public class CPU {
 
     public void updateTotalCPUTimeUsed() {
         cluster.updateTotalCPUTimeUsed(cpuTimeUsed);
+    }
+
+    public void updateTotalBatchesProcessed(){
+        cluster.updateTotalBatchesProcessed(totalBatchesProcessed);
     }
 
 	

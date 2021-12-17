@@ -57,7 +57,7 @@ public class GPUService extends MicroService {
 
 			if (tickBroadcast.isLast()) {
 
-				gpu.updateTotalGPUTimeUsed();
+				gpu.updateTotalGPUTimeUsed();	
 
 				// TODO: remove debug block
 				synchronized (System.out) {

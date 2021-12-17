@@ -154,50 +154,55 @@ public class GPU {
 		numberOfTrainedSamples=0;
 
 		// TODO : remove debug
-		synchronized(System.out){
-			System.out.println("initializing training on model " + model.getName() + " of size " + model.getData().getSize());
-		}
+		// synchronized(System.out){
+		// 	System.out.println("initializing training on model " + model.getName() + " of size " + model.getData().getSize());
+		// }
 	}
 
 
 	public boolean train() {
 		// TODO : remove debug
-		synchronized(System.out){
-			System.out.println("\n[*] Before batch creation loop, model=" + model.getName() +
-			 "\nof size " + model.getData().getSize() +
-			  "\ncurrbatchindex=" + currentBatchIndex +
-			  "\nemptyVRam=" + emptyVRAM +
-			  "\n");
-		}
+		// synchronized(System.out){
+		// 	System.out.println("\n[*] Before batch creation loop, model=" + model.getName() +
+		// 	 "\nof size " + model.getData().getSize() +
+		// 	  "\ncurrbatchindex=" + currentBatchIndex +
+		// 	  "\nemptyVRam=" + emptyVRAM +
+		// 	  "\n");
+		// }
 
 		// send more batches to cluster if there's available space to store them when they get back
 		while(currentBatchIndex < model.getData().getSize() && emptyVRAM != 0){
 			DataBatch dataBatch=new DataBatch(model.getData(), currentBatchIndex, this);
-			cluster.sendBatchForProcessing(dataBatch);
+			cluster.sendBatchForProcessing(dataBatch);	
 			--emptyVRAM; // reserving space for it to come back to
 			currentBatchIndex+=1000;
 		}
 		
 		// TODO : remove debug
-		synchronized(System.out){
-			System.out.println("\n[*] After batch creation loop, model=" + model.getName() +
-			 "\nof size " + model.getData().getSize() +
-			  "\ncurrbatchindex=" + currentBatchIndex +
-			  "\nemptyVRam=" + emptyVRAM + 
-			  "\n");
-		}	
+		// synchronized(System.out){
+		// 	System.out.println("\n[*] After batch creation loop, model=" + model.getName() +
+		// 	 "\nof size " + model.getData().getSize() +
+		// 	  "\ncurrbatchindex=" + currentBatchIndex +
+		// 	  "\nemptyVRam=" + emptyVRAM + 
+		// 	  "\n");
+		// }	
 
-		if( ! vRAM.isEmpty()){
+
+		if( (! vRAM.isEmpty())){	//TODO:Left unsynched!!
 
 			++gpuTimeUsed;
-			DataBatch batch=vRAM.peek();
+			DataBatch batch=vRAM.peek();	//TODO:Left unsynched!!
 
 			if( ! batch.isInTraining()){
 				batch.initTraining(trainingDelay);
 			}
 
 			if(batch.train() == true){
-				vRAM.poll();
+				
+				synchronized(vRAM){
+					vRAM.poll();		
+				}	
+
 				numberOfTrainedSamples+=1000;
 				++emptyVRAM;
 
@@ -218,7 +223,9 @@ public class GPU {
 
 
 	public void returnProcessedBatch(DataBatch databatch){
-		vRAM.add(databatch);
+		synchronized(vRAM){
+			vRAM.add(databatch);	
+		}
 	}
 
 
@@ -231,7 +238,7 @@ public class GPU {
 		model.advanceStatus();		// change status to "Tested"
 
 		//TODO:remove debug
-		CRMSRunner.synchronizedSyso("testing model "+model.getName()+", result is: "+model.getResults()+" status is: "+model.getStatus());
+		//CRMSRunner.synchronizedSyso("testing model "+model.getName()+", result is: "+model.getResults()+" status is: "+model.getStatus());
 		//MessageBusImpl.getInstance().complete(testModelEvent, model);
 	}
 

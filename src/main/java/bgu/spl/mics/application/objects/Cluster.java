@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.internal.LinkedTreeMap;
 
@@ -43,8 +45,10 @@ public class Cluster {
 	// region
 	// private int availableCPUSNumber;
 	private ArrayList<ConfrenceInformation> finishedConferences;
-	private int totalCPUTimeUsed;
-	private int totalGPUTimeUsed;
+	private ArrayList<Student> studentsList;
+	private AtomicInteger totalCPUTimeUsed;
+	private AtomicInteger totalGPUTimeUsed;
+	private AtomicInteger totalBatchesProcessed;
 	// endregion
 
 	/**
@@ -74,9 +78,11 @@ public class Cluster {
 		}));
 	}
 
-		finishedConferences=new ArrayList<>();
-		totalCPUTimeUsed=0;
-		totalGPUTimeUsed=0;
+		finishedConferences = new ArrayList<>();
+		studentsList = new ArrayList<>();
+		totalCPUTimeUsed=new AtomicInteger(0);
+		totalGPUTimeUsed=new AtomicInteger(0);
+		totalBatchesProcessed=new AtomicInteger(0);
 
 		
 		// //TODO: check if needed
@@ -104,7 +110,7 @@ public class Cluster {
 		synchronized(CPUS) {
 			CPUS.add(cpu);
 
-			for(PriorityQueue<CPU> CPU_Queue: CPUS_PriorityQueues.values())
+			for(PriorityQueue<CPU> CPU_Queue: CPUS_PriorityQueues.values())		
 				CPU_Queue.add(cpu);
 		}
 	}
@@ -164,10 +170,19 @@ public class Cluster {
 	// }
 
 	public void sendBatchForProcessing(DataBatch dataBatch) {
-		PriorityQueue<CPU> q = CPUS_PriorityQueues.get(dataBatch.getData().getType());
-		CPU minimalWorkCPU=q.poll();
+		PriorityQueue<CPU> priorityQueueByType = CPUS_PriorityQueues.get(dataBatch.getData().getType());
+		
+		CPU minimalWorkCPU;
+		synchronized(priorityQueueByType){
+			minimalWorkCPU=priorityQueueByType.poll();
+		}
+
 		minimalWorkCPU.addBatch(dataBatch);
-		q.add(minimalWorkCPU);
+
+		synchronized(priorityQueueByType){
+			priorityQueueByType.add(minimalWorkCPU);
+		}
+
 	}
 
 
@@ -186,22 +201,58 @@ public class Cluster {
 	
 	// for json output
 	public LinkedTreeMap<String,Object> getStatistics() {
-		return null; // TODO: change to something working
+		LinkedTreeMap<String,Object> output=new LinkedTreeMap<>();
+
+		output.put("students", studentsList);
+
+		//CRMSRunner.synchronizedSyso(studentsList.toString() +"------------------");
+		output.put("conferences", finishedConferences);
+		output.put("cpuTimeUsed", totalCPUTimeUsed);
+		output.put("gpuTimeUsed", totalGPUTimeUsed);
+		output.put("batchesProcessed", totalBatchesProcessed);
+		
+		return output;
 	}
 
     public void uploadConferenceInformation(ConfrenceInformation conference) {
-		finishedConferences.add(conference);
+		synchronized(finishedConferences){
+			finishedConferences.add(conference);			
+		}
 
 		//TODO: remove debug
-		CRMSRunner.synchronizedSyso(conference.toString());
+		//CRMSRunner.synchronizedSyso(conference.toString());
     }
 
-	public synchronized void updateTotalCPUTimeUsed(int toAdd){
-		totalCPUTimeUsed+=toAdd;
+	public void updateTotalCPUTimeUsed(int toAdd){
+		int oldValue;
+
+		do{
+			oldValue=totalCPUTimeUsed.get();
+		}
+		while(!totalCPUTimeUsed.compareAndSet(oldValue, oldValue+toAdd));
+		
 	}
 
-	public synchronized void updateTotalGPUTimeUsed(int toAdd){
-		totalGPUTimeUsed+=toAdd;
+	public void updateTotalGPUTimeUsed(int toAdd){
+		int oldValue;
+				
+		do{
+			oldValue=totalGPUTimeUsed.get();
+		}
+		while(!totalGPUTimeUsed.compareAndSet(oldValue, oldValue + toAdd));	
+	}
+
+	public void updateTotalBatchesProcessed(int toAdd) {
+		int oldValue;
+				
+		do{
+			oldValue=totalBatchesProcessed.get();
+		}
+		while(!totalBatchesProcessed.compareAndSet(oldValue, oldValue + toAdd));	
+	}
+
+	public synchronized void registerStudent(Student student) {	//FIXME: should be synched??
+		studentsList.add(student);
 	}
 	
 	@Override
@@ -209,4 +260,8 @@ public class Cluster {
 		String output=" cpuTimeUsed= "+totalCPUTimeUsed+"\ngpuTimeUsed= "+totalGPUTimeUsed;
 		return output;
 	}
+
+	
+
+	
 }

@@ -40,6 +40,7 @@ public class TimeService extends MicroService {
 
 		try {
 			// for ( ; duration > 1; --duration) {
+			
 			for (int i = 1; i < duration; ++i) {
 				Thread.sleep(tickTime);
 				messageBus.sendBroadcast(tick);

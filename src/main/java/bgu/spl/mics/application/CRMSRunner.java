@@ -27,7 +27,8 @@ import com.google.gson.internal.LinkedTreeMap;
 public class CRMSRunner {
     public static void main(String[] args) {
 
-		String inputFilePath = "/mnt/c/Users/SB/Desktop/SPL/Assignment 2/example_input.json"; // TODO: remove
+		//String inputFilePath = "/mnt/c/Users/SB/Desktop/SPL/Assignment 2/example_input.json"; // TODO: remove
+		String inputFilePath="C:\\Users\\USER\\OneDrive\\Desktop\\SPL\\SPLAssignment2\\example_input.json";
 		String outputFilePath = inputFilePath.substring(0, inputFilePath.lastIndexOf('\\') + 1) + "output.json"; // TODO: move to after reading from args
 
 		// read config file
@@ -41,11 +42,11 @@ public class CRMSRunner {
 		
 		// Start threads
 		for (MicroService microService : parser.getMicroServices()) {
-		// 	synchronized (microService) {
+			synchronized (microService) {
 		 		new Thread(microService).start();
-		// 		try { microService.wait(); }
-		// 		catch (InterruptedException ie) { }
-		// 	}
+				try { microService.wait(); }
+				catch (InterruptedException ie) { }
+			}
 		}
 
 		Thread timeServiceThread = new Thread(parser.getTimeService());
@@ -71,7 +72,6 @@ public class CRMSRunner {
 
 
 	private static DeserializedJsonParser deserializeConfigFile(String configFilePath) {
-		
 		try (Reader reader = Files.newBufferedReader(Paths.get(configFilePath))) {
 			return new DeserializedJsonParser( new Gson().fromJson(reader, LinkedTreeMap.class) );
 		}
@@ -83,10 +83,14 @@ public class CRMSRunner {
 	}
 
 	private static void serializeOutputFile(String outputFilePath) {
+		Gson gson = new GsonBuilder()
+			.excludeFieldsWithoutExposeAnnotation()
+			.setPrettyPrinting()
+			.create();
 		// TODO: output a json file form statistics object of cluster
 
 		try (Writer writer = Files.newBufferedWriter(Paths.get(outputFilePath))) {
-			writer.write(new Gson().toJson( Cluster.getInstance().getStatistics(), LinkedTreeMap.class) );
+			writer.write(/* new Gson() */gson.toJson( Cluster.getInstance().getStatistics(), LinkedTreeMap.class) );
 		}
 		catch (Exception ex) {
 			synchronizedPrintStackTrace(ex); 

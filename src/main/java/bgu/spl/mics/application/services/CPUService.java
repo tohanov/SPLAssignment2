@@ -39,6 +39,7 @@ public class CPUService extends MicroService {
 			if (tickBroadcast.isLast()) {
 
 				cpu.updateTotalCPUTimeUsed();
+				cpu.updateTotalBatchesProcessed();
 
 
 				// TODO: remove debug block

@@ -2,6 +2,8 @@ package bgu.spl.mics.application.objects;
 
 import java.util.Map;
 
+import com.google.gson.annotations.Expose;
+
 /**
  * Passive object representing a Deep Learning model.
  * Add all the fields described in the assignment as private fields.
@@ -21,12 +23,16 @@ public class Model {
 		Good,
 		Bad
 	}
-
-
+	
+    @Expose
 	private String name;
+    @Expose
 	private Data data;
+	// not exposed on purpose
 	private Student student;
+	@Expose
 	private Status status;
+    @Expose
 	private Results results;
 
 

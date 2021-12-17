@@ -11,7 +11,7 @@ public class TestModelEvent implements Event<Model>{
     public TestModelEvent(Model model){
         this.model=model;
 
-        CRMSRunner.synchronizedSyso("now testing model "+model.getName());
+       // CRMSRunner.synchronizedSyso("now testing model "+model.getName());
 
     }
 
