@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import bgu.spl.mics.application.CRMSRunner;
 import bgu.spl.mics.application.messages.PublishConferenceBroadcast;
@@ -34,7 +36,10 @@ public class MessageBusImpl implements MessageBus {
 	private HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> broadcastHashMap; 
 	private HashMap<Class<? extends Message>,LinkedList<MicroService>> eventHashMap;
 	private HashMap<Event<? extends Object>,Future<? extends Object>> futureHashMap;
-
+	
+	private ReentrantReadWriteLock microServicesHashMapRWL; 
+	//private ReentrantReadWriteLock broadcastHashMapRWL;
+	private ReentrantReadWriteLock futureHashMapRWL;
 
 	private MessageBusImpl(){
 		microServicesHashMap = new HashMap<>();
@@ -50,6 +55,10 @@ public class MessageBusImpl implements MessageBus {
 		eventHashMap.put(ExampleEvent.class, new LinkedList<>());
 
 		futureHashMap=new HashMap<>();
+
+		microServicesHashMapRWL=new ReentrantReadWriteLock();
+		//broadcastHashMapRWL=new ReentrantReadWriteLock();
+		futureHashMapRWL=new ReentrantReadWriteLock(); 
 	}
 
 
@@ -62,9 +71,9 @@ public class MessageBusImpl implements MessageBus {
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
 		LinkedList<MicroService> microServices;
 
-		synchronized (eventHashMap) {
+	//	synchronized (eventHashMap) {
 			microServices = eventHashMap.get(type);
-		}
+	//	}
 
 		synchronized (microServices) {
 			microServices.addLast(m);
@@ -75,9 +84,12 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
 		LinkedList<MicroService> ls;
-		synchronized (broadcastHashMap) {
+		//synchronized (broadcastHashMap) {
+			//broadcastHashMapRWL.readLock().lock();
 			ls = broadcastHashMap.get(type);
-		}
+			//broadcastHashMapRWL.readLock().unlock();
+
+		//}
 
 		synchronized (ls) {
 			ls.addLast(m);
@@ -88,9 +100,11 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public <T> void complete(Event<T> e, T result) {
 		Future<T> future;
-		synchronized (futureHashMap) {
+		//synchronized (futureHashMap) {
+			futureHashMapRWL.writeLock().lock();
 			future = (Future<T>)futureHashMap.remove(e);
-		}
+			futureHashMapRWL.writeLock().unlock();
+		//}
 
 		future.resolve(result);
 
@@ -102,28 +116,36 @@ public class MessageBusImpl implements MessageBus {
 
 	private void completeAll(){ // TODO : rethink
 		
+		futureHashMapRWL.readLock().lock();
 		for(Future<? extends Object> future: futureHashMap.values()){
 			synchronized(future){
 				future.notifyAll();
 			}
 		}
+		futureHashMapRWL.readLock().unlock();
+
 	}
 
 
 	@Override
 	public void sendBroadcast(Broadcast b) {
 		LinkedList<MicroService> ls;
-		synchronized (broadcastHashMap) {
+		//synchronized (broadcastHashMap) {
+			//broadcastHashMapRWL.readLock().lock();
 			ls = broadcastHashMap.get(b.getClass());
-		}
+			//broadcastHashMapRWL.readLock().unlock();
+
+		//}
 
 		Queue<Message> queue;
 
 		synchronized (ls) {
 			for(MicroService m : ls) {
-				synchronized (microServicesHashMap) {
+				//synchronized (microServicesHashMap) {
+					microServicesHashMapRWL.readLock().lock();
 					queue = microServicesHashMap.get(m);
-				}
+					microServicesHashMapRWL.readLock().unlock();
+			//	}
 
 				synchronized (queue) {
 					queue.add(b);
@@ -138,9 +160,9 @@ public class MessageBusImpl implements MessageBus {
 	public <T> Future<T> sendEvent(Event<T> e) {
 		LinkedList<MicroService> microServices;
 
-		synchronized (eventHashMap) {
+	//	synchronized (eventHashMap) {
 			microServices = eventHashMap.get(e.getClass());		//choose microservice
-		}
+	//	}
 
 		MicroService chosenMicroService;
 
@@ -156,18 +178,23 @@ public class MessageBusImpl implements MessageBus {
 
 		Queue<Message> eventQueue;
 		// TODO: use a thread safe queue? so no problems happen with the get query
-		synchronized(microServicesHashMap) {
+		//synchronized(microServicesHashMap) {
+			microServicesHashMapRWL.readLock().lock();
 			eventQueue = microServicesHashMap.get(chosenMicroService);
-		}
+			microServicesHashMapRWL.readLock().unlock();
+		//}
 
 		Future<T> future = new Future<>();
 		// TODO: maybe change synchronization to be on microservice
 		synchronized (eventQueue) {
 			eventQueue.add(e);	//adds the message to the chosen micro-service Queue
 			// TODO: move the futureHashMap synchronized block out of the eventQueue block?
-			synchronized (futureHashMap) {
+			//synchronized (futureHashMap) {
+				futureHashMapRWL.writeLock().lock();
 				futureHashMap.put(e, future);
-			}
+				futureHashMapRWL.writeLock().unlock();
+
+			//}
 
 			eventQueue.notify(); // only one thread waiting for events on each queue
 		}
@@ -180,33 +207,40 @@ public class MessageBusImpl implements MessageBus {
 	public void register(MicroService m) {
 		Queue<Message> ls = new LinkedList<Message>();
 
-		synchronized (microServicesHashMap) {
+		//synchronized (microServicesHashMap) {
+			microServicesHashMapRWL.writeLock().lock();
 			microServicesHashMap.put(m, ls);
-		}
+			microServicesHashMapRWL.writeLock().unlock();
+
+		//}
 	}
 
 
 	@Override
 	public void unregister(MicroService m) {
-		synchronized (microServicesHashMap) {
+		//synchronized (microServicesHashMap) {
+			microServicesHashMapRWL.writeLock().lock();
 			microServicesHashMap.remove(m);
-		}
+			microServicesHashMapRWL.writeLock().unlock();
+
+		//}
 		
-		synchronized (broadcastHashMap) { // TODO: use fast fail iterator functionality??
+		//synchronized (broadcastHashMap) { // TODO: use fast fail iterator functionality??
+			
 			for(LinkedList<MicroService> ls : broadcastHashMap.values()) {
 				synchronized (ls) {
 					ls.remove(m);
 				}
 			}
-		}
+		//}
 
-		synchronized (eventHashMap) {
+	//	synchronized (eventHashMap) {
 			for(LinkedList<MicroService> ls : eventHashMap.values()) {
 				synchronized (ls) {
 					ls.remove(m);
 				}
 			}
-		}
+	//	}
 
 		if(m instanceof TimeService){
 			completeAll();
@@ -221,9 +255,12 @@ public class MessageBusImpl implements MessageBus {
 		//TODO: need to check when to throw exception
 		Queue<Message> ls;
 
-		synchronized (microServicesHashMap) {
+		//synchronized (microServicesHashMap) {
+			microServicesHashMapRWL.readLock().lock();
 			ls = microServicesHashMap.get(m);
-		}
+			microServicesHashMapRWL.readLock().unlock();
+
+		//}
 
 		Message message;
 
@@ -242,18 +279,22 @@ public class MessageBusImpl implements MessageBus {
 
 
 	public boolean isRegistered(MicroService m) {
-		synchronized (microServicesHashMap) {
-			return microServicesHashMap.get(m) != null;
-		}
+		//synchronized (microServicesHashMap) {
+			microServicesHashMapRWL.readLock().lock();
+			boolean ans= microServicesHashMap.get(m) != null;
+			microServicesHashMapRWL.readLock().unlock();
+
+			return ans;
+		//}
 	}
 
 
 	public boolean isSubscribedToBroadcast(Class<? extends Broadcast> type, MicroService m){
 		LinkedList<MicroService> ls;
 
-		synchronized (broadcastHashMap) {
+		//synchronized (broadcastHashMap) {
 			ls = broadcastHashMap.get(type);
-		}
+		//}
 
 		if(ls == null)
 			return false;
@@ -267,9 +308,9 @@ public class MessageBusImpl implements MessageBus {
 	public <T> boolean isSubscribedToEvent(Class<? extends Event<T>> type, MicroService m){
 		LinkedList<MicroService> ls;
 
-		synchronized (eventHashMap) {
+		//synchronized (eventHashMap) {
 			ls = eventHashMap.get(type);
-		}
+		//}
 
 		if(ls == null)
 			return false;
@@ -278,4 +319,40 @@ public class MessageBusImpl implements MessageBus {
 			return ls.contains(m);
 		}
 	}
+
+	private class ReadWriteLock{
+
+		private int readers       = 0;
+		private int writers       = 0;
+		private int writeRequests = 0;
+	  
+		public synchronized void lockRead() throws InterruptedException{
+		  while(writers > 0 || writeRequests > 0){
+			wait();
+		  }
+		  readers++;
+		}
+	  
+		public synchronized void unlockRead(){
+		  readers--;
+		  notifyAll();
+		}
+	  
+		public synchronized void lockWrite() throws InterruptedException{
+		  writeRequests++;
+	  
+		  while(readers > 0 || writers > 0){
+			wait();
+		  }
+		  writeRequests--;
+		  writers++;
+		}
+	  
+		public synchronized void unlockWrite() throws InterruptedException{
+		  writers--;
+		  notifyAll();
+		}
+	  }
+
 }
+

@@ -137,10 +137,10 @@
     "Conferences":
     [
         {"name": "ICML", "date": 19},
-        {"name": "NeurIPS", "date": 2000},
-        {"name": "CVPR", "date": 2000},
-        {"name": "ECCV", "date": 2000},
-        {"name": "AISTATS", "date": 2000}
+        {"name": "NeurIPS", "date": 19},
+        {"name": "CVPR", "date": 19},
+        {"name": "ECCV", "date": 19},
+        {"name": "AISTATS", "date": 19}
     ],
     "TickTime": 10, // 50,
     "Duration": 24 // 5500

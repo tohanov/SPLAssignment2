@@ -41,11 +41,11 @@ public class CRMSRunner {
 		
 		// Start threads
 		for (MicroService microService : parser.getMicroServices()) {
-			synchronized (microService) {
-				new Thread(microService).start();
-				try { microService.wait(); }
-				catch (InterruptedException ie) { }
-			}
+		// 	synchronized (microService) {
+		 		new Thread(microService).start();
+		// 		try { microService.wait(); }
+		// 		catch (InterruptedException ie) { }
+		// 	}
 		}
 
 		Thread timeServiceThread = new Thread(parser.getTimeService());

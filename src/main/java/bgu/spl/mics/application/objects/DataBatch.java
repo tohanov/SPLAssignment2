@@ -23,6 +23,7 @@ public class DataBatch {
         this.start_index=start_index;
 		this.ownerGpu = _ownerGpu;
 		inProcessing = false;
+		inTraining=false;
 		
     }
 
@@ -34,6 +35,9 @@ public class DataBatch {
 
 	public void initTraining(int tickCount) {
 		trainingTickCount = tickCount;
+		//inProcessing=false;
+		inTraining=true;
+		
 	}
 
 
