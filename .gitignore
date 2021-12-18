@@ -7,3 +7,5 @@
 !src/
 !src/**
 !planning.drawio
+!.vscode/
+!.vscode/launch.json

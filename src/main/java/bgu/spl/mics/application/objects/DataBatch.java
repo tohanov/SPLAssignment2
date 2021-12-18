@@ -1,31 +1,28 @@
 package bgu.spl.mics.application.objects;
 
-import bgu.spl.mics.application.messages.TickBroadcast;
 
 /**
  * Passive object representing a data used by a model.
  * Add fields and methods to this class as you see fit (including public methods and constructors).
  */
-
 public class DataBatch {
+
     private Data data;
     private int start_index;
 	private GPU ownerGpu;
-	// private int processed_index;
-	// private int end_index;
 	private int processingTickCount;
 	private int trainingTickCount;
 	private boolean inProcessing;
 	private boolean inTraining;
 
-    public DataBatch(Data data, int start_index, GPU _ownerGpu){
-        this.data=data;
-        this.start_index=start_index;
+
+	public DataBatch(Data data, int start_index, GPU _ownerGpu) {
+		this.data = data;
+		this.start_index = start_index;
 		this.ownerGpu = _ownerGpu;
 		inProcessing = false;
-		inTraining=false;
-		
-    }
+		inTraining = false;
+	}
 
 
 	public void setStartProcessing(int tickCount) {
@@ -33,22 +30,21 @@ public class DataBatch {
 		inProcessing = true;
 	}
 
+
 	public void initTraining(int tickCount) {
 		trainingTickCount = tickCount;
-		//inProcessing=false;
-		inTraining=true;
-		
+		inTraining = true;
 	}
 
 
-    public Data getData(){
-        return data;
+	public Data getData() {
+		return data;
+	}
 
-    }
 
-    public boolean isProcessed(){
-        return processingTickCount == 0;
-    }
+	public boolean isProcessed() {
+		return processingTickCount == 0;
+	}
 
 
 	public GPU getOwnerGPU() {
@@ -57,25 +53,26 @@ public class DataBatch {
 
 
 	public boolean process() {
-   		return --processingTickCount <= 0;//== 0;
-    }
+		return --processingTickCount <= 0; // == 0;
+	}
+
 
 	public boolean train() {
 		return --trainingTickCount == 0;
 	}
-	
+
 
 	public boolean isInProcessing() {
 		return inProcessing;
 	}
 
-	public boolean isInTraining(){
+
+	public boolean isInTraining() {
 		return inTraining;
 	}
 
 
-    public int getIndex() {
-        return start_index;
-    }
-
+	public int getIndex() {
+		return start_index;
+	}
 }

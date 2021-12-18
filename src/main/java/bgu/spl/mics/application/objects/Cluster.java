@@ -1,22 +1,16 @@
 package bgu.spl.mics.application.objects;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.gson.annotations.Expose;
 import com.google.gson.internal.LinkedTreeMap;
 
-import bgu.spl.mics.application.CRMSRunner;
-import bgu.spl.mics.application.objects.Data.Type;
-// import bgu.spl.mics.application.objects.DataBatch;
 
 /**
  * Passive object representing the cluster.
@@ -31,25 +25,39 @@ public class Cluster {
 		private static final Cluster instance = new Cluster();
 	}
 
+	private class ClusterStatistics {
+		@Expose private ArrayList<Student> students;
+		@Expose private ArrayList<ConfrenceInformation> conferences;
+		@Expose private AtomicInteger cpuTimeUsed;
+		@Expose private AtomicInteger gpuTimeUsed;
+		@Expose private AtomicInteger batchesProcessed;
+		@Expose private double Batches_CPUTime_Ratio;
+		@Expose private double Batches_GPUTime_Ratio;
+	}
+
 
 	// region According to instructions
-	private Collection<GPU> GPUS;
-	private Collection<CPU> CPUS;
-	private HashMap<Data.Type,PriorityQueue<CPU>> CPUS_PriorityQueues;
-	private HashMap<GPU,LinkedList<DataBatch>> databatchQueues;
-	// TODO add statistics
-	private LinkedTreeMap<String,Object> Statistics = new LinkedTreeMap<>();
+	private Collection<GPU> GPUS;	// FIXME : we're not using GPUS
+	private Collection<CPU> CPUS;	// FIXME : we're not using CPUS
+	// FIXME: maybe create new object for Statistics and return it during serialization
+	private ClusterStatistics Statistics; // FIXME : we're not using statistics correctly
 	// endregion According to instructions
 
 
-	// region
-	// private int availableCPUSNumber;
-	private ArrayList<ConfrenceInformation> finishedConferences;
-	private ArrayList<Student> studentsList;
-	private AtomicInteger totalCPUTimeUsed;
-	private AtomicInteger totalGPUTimeUsed;
-	private AtomicInteger totalBatchesProcessed;
-	// endregion
+	// region Operation
+	private HashMap<GPU,LinkedList<DataBatch>> databatchQueues;
+	private HashMap<Data.Type,PriorityQueue<CPU>> CPUsMinHeapsByDataType;
+	// endregion Operation
+
+
+	// region For statistics
+	// private ArrayList<ConfrenceInformation> Statistics.conferences;
+	// private ArrayList<Student> studentsList;
+	// private AtomicInteger Statistics.cpuTimeUsed;
+	// private AtomicInteger Statistics.gpuTimeUsed;
+	// private AtomicInteger totalBatchesProcessed;
+	// endregion For statistics
+
 
 	/**
      * Retrieves the single instance of this class.
@@ -58,41 +66,39 @@ public class Cluster {
 		return InternalSingleton.instance;
 	}
 
+
 	private Cluster() {
 		GPUS = new ArrayList<>();
-		CPUS=new ArrayList<>();
-		CPUS_PriorityQueues=new HashMap<Data.Type,PriorityQueue<CPU>>();
+		CPUS = new ArrayList<>();
+		CPUsMinHeapsByDataType = new HashMap<Data.Type,PriorityQueue<CPU>>();
 
-		for(Data.Type type: new Data.Type[] {Data.Type.Images, Data.Type.Text, Data.Type.Tabular}){
-			CPUS_PriorityQueues.put(type,new PriorityQueue<>(new Comparator<CPU>() {
-			
-			@Override
-			public int compare(CPU first, CPU second) {
-				int a =( first.getTickToCompletion()+first.calculateProcessingTime(type) )-
-					   ( second.getTickToCompletion() + second.calculateProcessingTime(type) );
+		initCPUinitCPUHeaps();
 
-				return a;
-				
-			}
-			
-		}));
+		Statistics = new ClusterStatistics();
+		Statistics.conferences = new ArrayList<>();
+		Statistics.students = new ArrayList<>();
+		Statistics.cpuTimeUsed = new AtomicInteger(0);
+		Statistics.gpuTimeUsed = new AtomicInteger(0);
+		Statistics.batchesProcessed = new AtomicInteger(0);
 	}
 
-		finishedConferences = new ArrayList<>();
-		studentsList = new ArrayList<>();
-		totalCPUTimeUsed=new AtomicInteger(0);
-		totalGPUTimeUsed=new AtomicInteger(0);
-		totalBatchesProcessed=new AtomicInteger(0);
 
-		
-		// //TODO: check if needed
-		// availableCPUS = new LinkedList[6];
+	private void initCPUinitCPUHeaps() {
+		for(Data.Type type : new Data.Type[]{ Data.Type.Images, Data.Type.Text, Data.Type.Tabular }) {
 
-		// for (int i = 0; i < 6; ++i) {
-		// 	availableCPUS[i] = new LinkedList<>();
-		// }
-
-
+			CPUsMinHeapsByDataType.put(
+				type,
+				new PriorityQueue<>(
+					new Comparator<CPU>() {
+						@Override
+						public int compare(CPU first, CPU second) {
+							return (first.getTickToCompletion() + first.calculateProcessingTime(type)) -
+									(second.getTickToCompletion() + second.calculateProcessingTime(type) );
+						}
+					}
+				)
+			);
+		}
 	}
 
 
@@ -110,8 +116,10 @@ public class Cluster {
 		synchronized(CPUS) {
 			CPUS.add(cpu);
 
-			for(PriorityQueue<CPU> CPU_Queue: CPUS_PriorityQueues.values())		
+			// add CPU to each minheap
+			for(PriorityQueue<CPU> CPU_Queue: CPUsMinHeapsByDataType.values()) {
 				CPU_Queue.add(cpu);
+			}
 		}
 	}
 
@@ -119,151 +127,107 @@ public class Cluster {
 	public void registerGPU(GPU gpu) {
 		synchronized(GPUS) {
 			GPUS.add(gpu);
-			databatchQueues.put(gpu, new LinkedList<DataBatch>());
+			databatchQueues.put(gpu, new LinkedList<DataBatch>()); // FIXME : relevant?
 		}
 	}
 
 
-	// public int getAvailableCPUSNumber() {
-	// 	return availableCPUSNumber;
-	// }
-
-
-	// public void sendBatchForProcessing(DataBatch dataBatch) {
-	// 	switch(dataBatch.getData().getType()) {
-	// 		case Images:
-	// 			for (int i = 5; i >= 0; --i) {
-	// 				if ( ! availableCPUS[i].isEmpty()) {
-	// 					// --availableCPUSNumber;
-	// 					CPU chosenCPU = availableCPUS[i].remove();
-	// 					chosenCPU.addBatch( dataBatch );
-	// 					break;
-	// 				}
-	// 			}
-	// 		break;
-	// 		case Text:
-	// 			for (int i = 2, j = 3; i >= 0; --i, ++j) {
-	// 				if ( ! availableCPUS[j].isEmpty()) {
-	// 					// --availableCPUSNumber;
-	// 					CPU chosenCPU = availableCPUS[j].remove();
-	// 					chosenCPU.addBatch( dataBatch );
-	// 					break;
-	// 				}
-	// 				else if ( ! availableCPUS[i].isEmpty()) {
-	// 					// --availableCPUSNumber;
-	// 					CPU chosenCPU = availableCPUS[i].remove();
-	// 					chosenCPU.addBatch( dataBatch );
-	// 					break;
-	// 				}
-	// 			}
-	// 		break;
-	// 		default: // Tabular
-	// 			for (int i = 0; i <= 5; ++i) {
-	// 				if ( ! availableCPUS[i].isEmpty()) {
-	// 					// --availableCPUSNumber;
-	// 					CPU chosenCPU = availableCPUS[i].remove();
-	// 					chosenCPU.addBatch( dataBatch );
-	// 					break;
-	// 				}
-	// 			}
-	// 	}
-	// }
-
 	public void sendBatchForProcessing(DataBatch dataBatch) {
-		PriorityQueue<CPU> priorityQueueByType = CPUS_PriorityQueues.get(dataBatch.getData().getType());
+		PriorityQueue<CPU> priorityQueueByType = CPUsMinHeapsByDataType.get(dataBatch.getData().getType());
 		
 		CPU minimalWorkCPU;
-		synchronized(priorityQueueByType){
-			minimalWorkCPU=priorityQueueByType.poll();
+		synchronized (priorityQueueByType) {
+			minimalWorkCPU = priorityQueueByType.poll();
 		}
 
 		minimalWorkCPU.addBatch(dataBatch);
 
-		synchronized(priorityQueueByType){
+		synchronized (priorityQueueByType) {
 			priorityQueueByType.add(minimalWorkCPU);
 		}
-
 	}
 
 
-	// TODO: implement sending multiple batches at once, according to available vRam
 	// and let cluster handle assigning them
 	public void sendProcessedBatchToTraining(DataBatch dataBatch) {
-		GPU destinationGPU=dataBatch.getOwnerGPU();
+		GPU destinationGPU = dataBatch.getOwnerGPU();
 		destinationGPU.returnProcessedBatch(dataBatch);
 	}
 
-
-	/*public LinkedList<DataBatch> getBatchToProcess() {
-		for(LinkedList)
-		
-	}*/
 	
 	// for json output
-	public LinkedTreeMap<String,Object> getStatistics() {
-		LinkedTreeMap<String,Object> output=new LinkedTreeMap<>();
+	// FIXME : use Statistics somehow
+	public Object getStatistics() {
+		// FIXME : remove comments
+		// LinkedTreeMap<String, Object> output = new LinkedTreeMap<>();
 
-		output.put("students", studentsList);
+		// output.put("students", Statistics.students);
+		// output.put("conferences", Statistics.conferences);
+		// output.put("cpuTimeUsed", Statistics.cpuTimeUsed);
+		// output.put("gpuTimeUsed", Statistics.gpuTimeUsed);
+		// output.put("batchesProcessed", Statistics.batchesProcessed);
 
-		//CRMSRunner.synchronizedSyso(studentsList.toString() +"------------------");
-		output.put("conferences", finishedConferences);
-		output.put("cpuTimeUsed", totalCPUTimeUsed);
-		output.put("gpuTimeUsed", totalGPUTimeUsed);
-		output.put("batchesProcessed", totalBatchesProcessed);
-		output.put("Batches_CPUTime_Ratio",((double) totalBatchesProcessed.get())/totalCPUTimeUsed.get());
-		output.put("Batches_GPUTime_Ratio",((double) totalBatchesProcessed.get())/totalGPUTimeUsed.get());
+		// output.put("Batches_CPUTime_Ratio", ((double) Statistics.batchesProcessed.get()) / Statistics.cpuTimeUsed.get());
+		// output.put("Batches_GPUTime_Ratio", ((double) Statistics.batchesProcessed.get()) / Statistics.gpuTimeUsed.get());
+
+		// return output;
 		
-		return output;
+		Statistics.Batches_CPUTime_Ratio = ((double) Statistics.batchesProcessed.get()) / Statistics.cpuTimeUsed.get();
+		Statistics.Batches_GPUTime_Ratio = ((double) Statistics.batchesProcessed.get()) / Statistics.gpuTimeUsed.get();
+		return Statistics;
 	}
 
+
     public void uploadConferenceInformation(ConfrenceInformation conference) {
-		synchronized(finishedConferences){
-			finishedConferences.add(conference);			
+		synchronized(Statistics.conferences){
+			Statistics.conferences.add(conference);			
 		}
 
 		//TODO: remove debug
 		//CRMSRunner.synchronizedSyso(conference.toString());
     }
 
+
 	public void updateTotalCPUTimeUsed(int toAdd){
 		int oldValue;
 
 		do{
-			oldValue=totalCPUTimeUsed.get();
-		}
-		while(!totalCPUTimeUsed.compareAndSet(oldValue, oldValue+toAdd));
-		
+			oldValue=Statistics.cpuTimeUsed.get();
+		} while ( ! Statistics.cpuTimeUsed.compareAndSet(oldValue, oldValue + toAdd));
 	}
 
-	public void updateTotalGPUTimeUsed(int toAdd){
+
+	public void updateTotalGPUTimeUsed(int toAdd) {
 		int oldValue;
-				
-		do{
-			oldValue=totalGPUTimeUsed.get();
-		}
-		while(!totalGPUTimeUsed.compareAndSet(oldValue, oldValue + toAdd));	
+
+		do {
+			oldValue = Statistics.gpuTimeUsed.get();
+		} while ( ! Statistics.gpuTimeUsed.compareAndSet(oldValue, oldValue + toAdd));
 	}
 
+	
 	public void updateTotalBatchesProcessed(int toAdd) {
 		int oldValue;
-				
-		do{
-			oldValue=totalBatchesProcessed.get();
-		}
-		while(!totalBatchesProcessed.compareAndSet(oldValue, oldValue + toAdd));	
+
+		do {
+			oldValue = Statistics.batchesProcessed.get();
+		} while ( ! Statistics.batchesProcessed.compareAndSet(oldValue, oldValue + toAdd));
 	}
 
-	public synchronized void registerStudent(Student student) {	//FIXME: should be synched??
-		studentsList.add(student);
+	
+	//FIXME: should be synched??
+	public /* synchronized */ void registerStudent(Student student) {
+		Statistics.students.add(student);
 	}
 	
+
+	// TODO : remove??
 	@Override
-	public String toString(){
-		String output=" cpuTimeUsed= "+totalCPUTimeUsed+"\ngpuTimeUsed= "+totalGPUTimeUsed;
+	public String toString() {
+		String output = 
+			"[*] cpuTimeUsed= " + Statistics.cpuTimeUsed +
+			"\ngpuTimeUsed= " + Statistics.gpuTimeUsed;
+
 		return output;
 	}
-
-	
-
-	
 }

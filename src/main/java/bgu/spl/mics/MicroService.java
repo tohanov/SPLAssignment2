@@ -1,11 +1,7 @@
 package bgu.spl.mics;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
-import bgu.spl.mics.application.messages.TickBroadcast;
 
 /**
  * The MicroService is an abstract class that any micro-service in the system
@@ -31,7 +27,6 @@ public abstract class MicroService implements Runnable {
     private final String name;
     private MessageBus messageBus;
     private HashMap<Class<? extends Message>, Callback<? extends Message>> callbackHashMap;
-	private ConcurrentLinkedQueue<Callback<Message>> callbackQueue;
 
 
     /**
@@ -40,10 +35,8 @@ public abstract class MicroService implements Runnable {
      */
     public MicroService(String name) {
         this.name = name;
-		Thread.currentThread().setName(name); // debugging
 
         messageBus = MessageBusImpl.getInstance();
-		// callbackQueue = new ConcurrentLinkedQueue<>();
 		callbackHashMap = new HashMap<>();
     }
 
@@ -179,11 +172,11 @@ public abstract class MicroService implements Runnable {
      */
     @Override
     public final void run() {
-		MessageBusImpl.getInstance().register(this);
+		messageBus.register(this);
 		
 		// TODO: remove this debug block
 		synchronized (System.out) {
-			System.out.println("[*] " + name + ": has started"); 
+			System.out.println("[*] " + name + ": has started");
 		}
 
         initialize();
@@ -192,12 +185,11 @@ public abstract class MicroService implements Runnable {
 		//TODO: readd for sync of first time tick with initializations of microservices
         synchronized (this) { this.notifyAll(); }
 
-        while (!terminated/*  && !Thread.currentThread().isInterrupted() */) {
+        while ( ! terminated) {
 			try {
 				Message message = messageBus.awaitMessage(this);
 				Class<? extends Message> messageClass = message.getClass();
 
-				// TODO: think if should let the services handle the last tick as well or terminate everything without that
 				((Callback<Message>)callbackHashMap.get(messageClass)).call(message);
 			}
 			catch (InterruptedException e) {
@@ -211,6 +203,6 @@ public abstract class MicroService implements Runnable {
 			}
         }
         
-		MessageBusImpl.getInstance().unregister(this);
+		messageBus.unregister(this);
     }
 }

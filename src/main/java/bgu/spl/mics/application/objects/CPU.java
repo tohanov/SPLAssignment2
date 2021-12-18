@@ -1,17 +1,9 @@
 package bgu.spl.mics.application.objects;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.jar.Attributes.Name;
 
-import javax.print.event.PrintJobListener;
-
-import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Data.Type;
-import java.util.Collection;
-import java.util.LinkedList;
 
 /**
  * Passive object representing a single CPU.
@@ -24,7 +16,6 @@ public class CPU {
     private Collection<DataBatch> data;
     private Cluster cluster;
     private int ticksToCompletion;
-	private int weight; // TODO complete for comparator
     private int cpuTimeUsed;
     private int totalBatchesProcessed;
 
@@ -32,12 +23,12 @@ public class CPU {
 	// region for serialization from json
 	public CPU(int _cores) {
 		cores = _cores;
-        data = new ArrayDeque<>(); // TODO: make thread-safe?
-        cluster = Cluster.getInstance();
-        cluster.registerCPU(this);
-        ticksToCompletion=0;
-        cpuTimeUsed=0;
-        totalBatchesProcessed=0;
+		data = new ArrayDeque<>();
+		cluster = Cluster.getInstance();
+		cluster.registerCPU(this);
+		ticksToCompletion = 0;
+		cpuTimeUsed = 0;
+		totalBatchesProcessed = 0;
 	}
 	// endregion for serialization from json
 
@@ -47,21 +38,19 @@ public class CPU {
      * @pre type==Data.Type.Images || type==Data.Type.Images || type==Data.Type.Images 
      *  
      */
-    int calculateProcessingTime(Data.Type type){
+	int calculateProcessingTime(Data.Type type) {
         
-        if(type==Type.Images)
-            return 32/cores*4;
-        else if(type==Type.Text)
-            return 32/cores*2;
-        else // type==Type.Tabular
-            return 32/cores;
+		if (type == Type.Images)
+			return 32 / cores * 4;
+		else if (type == Type.Text)
+			return 32 / cores * 2;
+		else // type==Type.Tabular
+			return 32 / cores;
     }
 
 
-
-
 	public void tickCallback() {
-        if(! isEmpty()) {
+        if( ! isEmpty()) {
             // synchronized (System.out) {
             //     System.out.println("\nentered !isEmpty()\n");
             // }
@@ -77,7 +66,7 @@ public class CPU {
             // }
             DataBatch batch;
 
-            synchronized(data){    
+			synchronized (data) {
 			    batch = ((ArrayDeque<DataBatch>)data).peek(); 
             }
 
@@ -85,8 +74,8 @@ public class CPU {
 				batch.setStartProcessing(calculateProcessingTime(batch.getData().getType()));
 			}
 
-			if(batch.process()){
-                ++totalBatchesProcessed;
+			if (batch.process()) {
+				++totalBatchesProcessed;
 				cluster.sendProcessedBatchToTraining(removeBatch());    
 
                 // synchronized (System.out) {
@@ -108,7 +97,7 @@ public class CPU {
             this.data.add(toAdd);
         }
 
-        ticksToCompletion+=calculateProcessingTime(toAdd.getData().getType());
+		ticksToCompletion += calculateProcessingTime(toAdd.getData().getType());
 
         // synchronized(System.out){
         //     System.out.println("CPU with "+cores+" Cores received batch" + 
@@ -116,21 +105,20 @@ public class CPU {
         //         "\nticksToCompletion=" + ticksToCompletion +
         //         "\ntype=" + toAdd.getData().getType());
         // }
-
     }
+
 
     /**
      * @post data.size=@pre databatch.size()-1
      */
     public DataBatch removeBatch(){
-        
         DataBatch removed;
-        
-        synchronized(data){
-            removed = ((ArrayDeque<DataBatch>) data).removeFirst();    
-        }
 
-        return removed;
+		synchronized (data) {
+			removed = ((ArrayDeque<DataBatch>) data).removeFirst();
+		}
+
+		return removed;
     }
 
 
@@ -143,7 +131,7 @@ public class CPU {
 
 
     public boolean isCurrentBatchReady(){
-        return ((ArrayDeque<DataBatch>) data).getFirst().isProcessed();
+		return ((ArrayDeque<DataBatch>) data).getFirst().isProcessed();
     }
 
 
@@ -166,47 +154,8 @@ public class CPU {
         cluster.updateTotalCPUTimeUsed(cpuTimeUsed);
     }
 
+
     public void updateTotalBatchesProcessed(){
         cluster.updateTotalBatchesProcessed(totalBatchesProcessed);
     }
-
-	
-	// private static int[] processing = calcProcessingTicks();
-
-	// private static int[] calcProcessingTicks() {
-	// 	int[] arr = new int[18];
-	// 	for () { 
-
-	// 	}
-	// }
-
-    //  public CPU(int cores,Cluster cluster){
-    //     this.cores=cores;
-    //     this.data=new LinkedList<>();
-    //     this.cluster=cluster;
-    //     ticksToCompletion=0;
-
-
-    //  }
-	
-
-	/**
-     * @pre  data.getFirst().getData().getData().processed <  data.getFirst().getData().size
-     * @post data.getData().processed= @pre data.getData().processed + 1000 / calculateProcessingTime(dataType) 
-     */
-    // public void process(){
-    //     if(!((LinkedList<DataBatch>) data).isEmpty()){
-    //             --ticksToCompletion;
-    
-
-    //             ((LinkedList<DataBatch>) data).peekFirst().process();
-
-    //             if(isCurrentBatchReady()) {
-    //                 cluster.sendProcessedBatchToTraining(((LinkedList<DataBatch>) data).pollFirst());
-    //             }
-                
-                
-
-    //     }
-    // }
 }

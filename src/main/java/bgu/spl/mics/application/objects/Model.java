@@ -4,12 +4,13 @@ import java.util.Map;
 
 import com.google.gson.annotations.Expose;
 
+
 /**
  * Passive object representing a Deep Learning model.
  * Add all the fields described in the assignment as private fields.
  * Add fields and methods to this class as you see fit (including public methods and constructors).
  */
-public class Model {
+public class Model { // FIXME : remove unneeded/unused methods
 
 	public enum Status {
 		PreTrained, 
@@ -24,16 +25,12 @@ public class Model {
 		Bad
 	}
 	
-    @Expose
-	private String name;
-    @Expose
-	private Data data;
+    @Expose private String name;
+    @Expose private Data data;
 	// not exposed on purpose
 	private Student student;
-	@Expose
-	private Status status;
-    @Expose
-	private Results results;
+	@Expose private Status status;
+    @Expose private Results results;
 
 
 	// region for serialization from json
@@ -42,13 +39,17 @@ public class Model {
 		data = new Data( Data.typeFromString(_dataType), _size );
 		status = Status.PreTrained;
 		results = Results.None;
-		
 		student = _student;
 	}
 
 
 	public Model(Map<String,Object> _model, Student _student) {
-		this((String)_model.get("name"), (String)_model.get("type"), ((Double)_model.get("size")).intValue(), _student);
+		this(
+			(String)_model.get("name"), 
+			(String)_model.get("type"), 
+			((Double)_model.get("size")).intValue(),
+			_student
+		);
 	}
 	// endregion for serialization from json
 
@@ -58,39 +59,37 @@ public class Model {
     }
 
 
-	public Status getStatus(){
+	public Status getStatus() {
 		return status;
 	}
 
 
-	// public void changeStatus(Status newStatus){
-	// 	status=newStatus;
-	// }
-
-
-	public Results getResults(){
+	public Results getResults() {
 		return results;
 	}
 
 
-	public void changeResults(Results newResult){
+	public void changeResults(Results newResult) {
 		results=newResult;
 	}
 
 
-	public Data getData(){
+	public Data getData() {
 		return data;
 	}
 
 
-	public Student getStudent(){
+	public Student getStudent() {
 		return student;
 	}
 
+
+	// TODO : remove??
 	@Override
-	public String toString(){
+	public String toString() {
 		return getName();
 	}
+
 
 	public void advanceStatus() {
 		switch (status) {
