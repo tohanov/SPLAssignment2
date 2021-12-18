@@ -22,13 +22,22 @@ import bgu.spl.mics.application.objects.Model;
  */
 public class ConferenceService extends MicroService {
     
+	// region for serialization from json
+    private ConfrenceInformation conference;
+	public ConferenceService(Map<String,Object> _conference) {
+        super("Conference_" + (String)_conference.get("name"));
+        
+		conference=new ConfrenceInformation((String)_conference.get("name"),((Double)_conference.get("date")).intValue());
+    }
+	// endregion for serialization from json
+
     @Override
     protected void initialize() {
 
 		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
             if(conference.increaseTime()){
                 MessageBusImpl.getInstance().sendBroadcast(new PublishConferenceBroadcast(conference.returnSuccessfulModels()));
-                uploadConferenceInformation();
+                // uploadConferenceInformation();
                 terminate();
             }
 
@@ -52,17 +61,12 @@ public class ConferenceService extends MicroService {
         });
     }
 
-    public void uploadConferenceInformation(){
-        Cluster.getInstance().uploadConferenceInformation(conference);
-    }
+    // public void uploadConferenceInformation(){
+    //     Cluster.getInstance().uploadConferenceInformation(conference);
+    // }
 
-    private ConfrenceInformation conference;
-
-	// region for serialization from json
-	public ConferenceService(Map<String,Object> _conference) {
-        super("Conference_" + (String)_conference.get("name"));
-        
-		conference=new ConfrenceInformation((String)_conference.get("name"),((Double)_conference.get("date")).intValue());
+   
+    public ConfrenceInformation getConference() {
+        return conference;
     }
-	// endregion for serialization from json
 }

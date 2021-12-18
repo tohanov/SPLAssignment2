@@ -25,14 +25,15 @@ public class Cluster {
 		private static final Cluster instance = new Cluster();
 	}
 
-	private class ClusterStatistics {
-		@Expose private ArrayList<Student> students;
-		@Expose private ArrayList<ConfrenceInformation> conferences;
+	public class ClusterStatistics {
+		// @Expose private ArrayList<Student> students;			//FIXME
+		// @Expose private ArrayList<ConfrenceInformation> conferences;	//FIXME
 		@Expose private AtomicInteger cpuTimeUsed;
 		@Expose private AtomicInteger gpuTimeUsed;
 		@Expose private AtomicInteger batchesProcessed;
 		@Expose private double Batches_CPUTime_Ratio;
 		@Expose private double Batches_GPUTime_Ratio;
+		// @Expose private int modelsTrained;	//FIXME
 	}
 
 
@@ -75,11 +76,12 @@ public class Cluster {
 		initCPUinitCPUHeaps();
 
 		Statistics = new ClusterStatistics();
-		Statistics.conferences = new ArrayList<>();
-		Statistics.students = new ArrayList<>();
+		// Statistics.conferences = new ArrayList<>();
+		// Statistics.students = new ArrayList<>();
 		Statistics.cpuTimeUsed = new AtomicInteger(0);
 		Statistics.gpuTimeUsed = new AtomicInteger(0);
 		Statistics.batchesProcessed = new AtomicInteger(0);
+		
 	}
 
 
@@ -157,38 +159,25 @@ public class Cluster {
 	
 	// for json output
 	// FIXME : use Statistics somehow
-	public Object getStatistics() {
-		// FIXME : remove comments
-		// LinkedTreeMap<String, Object> output = new LinkedTreeMap<>();
-
-		// output.put("students", Statistics.students);
-		// output.put("conferences", Statistics.conferences);
-		// output.put("cpuTimeUsed", Statistics.cpuTimeUsed);
-		// output.put("gpuTimeUsed", Statistics.gpuTimeUsed);
-		// output.put("batchesProcessed", Statistics.batchesProcessed);
-
-		// output.put("Batches_CPUTime_Ratio", ((double) Statistics.batchesProcessed.get()) / Statistics.cpuTimeUsed.get());
-		// output.put("Batches_GPUTime_Ratio", ((double) Statistics.batchesProcessed.get()) / Statistics.gpuTimeUsed.get());
-
-		// return output;
-		
+	public ClusterStatistics getStatistics() {
 		Statistics.Batches_CPUTime_Ratio = ((double) Statistics.batchesProcessed.get()) / Statistics.cpuTimeUsed.get();
 		Statistics.Batches_GPUTime_Ratio = ((double) Statistics.batchesProcessed.get()) / Statistics.gpuTimeUsed.get();
+
 		return Statistics;
 	}
 
 
-    public void uploadConferenceInformation(ConfrenceInformation conference) {
-		synchronized(Statistics.conferences){
-			Statistics.conferences.add(conference);			
-		}
+    // public void uploadConferenceInformation(ConfrenceInformation conference) {
+	// 	synchronized(Statistics.conferences){
+	// 		Statistics.conferences.add(conference);			
+	// 	}
 
-		//TODO: remove debug
-		//CRMSRunner.synchronizedSyso(conference.toString());
-    }
+	// 	//TODO: remove debug
+	// 	//CRMSRunner.synchronizedSyso(conference.toString());
+    // }
 
 
-	public void updateTotalCPUTimeUsed(int toAdd){
+	public void increaseTotalCPUTimeUsed(int toAdd){
 		int oldValue;
 
 		do{
@@ -197,7 +186,7 @@ public class Cluster {
 	}
 
 
-	public void updateTotalGPUTimeUsed(int toAdd) {
+	public void increaseTotalGPUTimeUsed(int toAdd) {
 		int oldValue;
 
 		do {
@@ -206,7 +195,7 @@ public class Cluster {
 	}
 
 	
-	public void updateTotalBatchesProcessed(int toAdd) {
+	public void increaseTotalBatchesProcessed(int toAdd) {
 		int oldValue;
 
 		do {
@@ -216,9 +205,9 @@ public class Cluster {
 
 	
 	//FIXME: should be synched??
-	public /* synchronized */ void registerStudent(Student student) {
-		Statistics.students.add(student);
-	}
+	// public /* synchronized */ void registerStudent(Student student) {
+	// 	Statistics.students.add(student);
+	// }
 	
 
 	// TODO : remove??

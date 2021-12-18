@@ -17,6 +17,7 @@ import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
 import bgu.spl.mics.application.objects.Cluster;
 import bgu.spl.mics.application.objects.Model;
+import bgu.spl.mics.application.services.GPUService;
 import bgu.spl.mics.application.services.TimeService;
 import bgu.spl.mics.example.messages.ExampleEvent;
 
@@ -133,6 +134,11 @@ public class MessageBusImpl implements MessageBus {
 	}
 
 
+	/**
+	 * @Post: for(Future<? extends Object> overDueFuture: futureHashMap.values()){
+	 * 			no object is awaiting overDueFuture
+	 * } 
+	 */
 	private void completeAll(){ // TODO : rethink
 		futureHashMapRWL.readLock().lock();
 		for(Future<? extends Object> overDueFuture: futureHashMap.values()){
@@ -146,30 +152,18 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void sendBroadcast(Broadcast broadcast) {
-		// LinkedList<MicroService> broadcastSubscribedMicroServices;
-		// ReentrantReadWriteLock lock;
-		//synchronized (broadcastHashMap) {
-			//broadcastHashMapRWL.readLock().lock();
-			LockPair<LinkedList<MicroService>> pairSubscribed = broadcastHashMap.get(broadcast.getClass());
-
-			// broadcastSubscribedMicroServices = pairSubscribed.object;
-			// lock = pairSubscribed.lock;
-			//broadcastHashMapRWL.readLock().unlock();
-
-		//}
-
+		LockPair<LinkedList<MicroService>> pairSubscribed = broadcastHashMap.get(broadcast.getClass());
 		Queue<Message> broadcastAcceptingQueue;
 
-		// synchronized (broadcastSubscribedMicroServices) {
+	
 
-			// TODO: lock to sync with conference unsubsribe requests
+			// lock to sync with conference unsubsribe requests
 			pairSubscribed.lock.readLock().lock();
 			for(MicroService subscribedMicroService : pairSubscribed.object) {
-				//synchronized (microServicesHashMap) {
 					microServicesHashMapRWL.readLock().lock();
 					broadcastAcceptingQueue = microServicesHashMap.get(subscribedMicroService);
 					microServicesHashMapRWL.readLock().unlock();
-			//	}
+			
 				if (broadcastAcceptingQueue != null) { // TODO: check if needed in case the microservice got unregistered in between us locking for read on microServicesHashMap and us running getting
 					synchronized (broadcastAcceptingQueue) { // leaving on synchronized because of notifyAll()??
 						broadcastAcceptingQueue.add(broadcast);
@@ -178,7 +172,7 @@ public class MessageBusImpl implements MessageBus {
 				}
 			}
 			pairSubscribed.lock.readLock().unlock();
-		// }
+		
 	}
 
 	
@@ -311,7 +305,7 @@ public class MessageBusImpl implements MessageBus {
 	}
 
 
-	// region Test Methods
+	// region Test Methods-------------
 	public boolean isRegistered(MicroService m) {
 		//synchronized (microServicesHashMap) {
 			microServicesHashMapRWL.readLock().lock();
@@ -354,5 +348,10 @@ public class MessageBusImpl implements MessageBus {
 		}
 	}
 	// endregion Test Methods
+
+
+    public Object getNumberOfMessagesInQueue(MicroService ms) {
+        return microServicesHashMap.get(ms).size();
+    }
 }
 

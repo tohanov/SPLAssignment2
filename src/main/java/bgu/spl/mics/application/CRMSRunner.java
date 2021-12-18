@@ -3,15 +3,20 @@ package bgu.spl.mics.application;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.objects.Cluster;
 import bgu.spl.mics.application.objects.DeserializedJson;
+import bgu.spl.mics.application.objects.Student;
+import bgu.spl.mics.application.services.ConferenceService;
+import bgu.spl.mics.application.services.StudentService;
 
 import java.io.File;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
 import com.google.gson.internal.LinkedTreeMap;
 
 
@@ -29,7 +34,7 @@ public class CRMSRunner {
 		String outputFilePath = outputPathFromArgs(args);
 
 		// output a json file with statistics
-		serializeOutputFile(outputFilePath);
+		serializeOutputFile(outputFilePath, system);
     }
 
 
@@ -89,14 +94,18 @@ public class CRMSRunner {
 	}
 
 
-	private static void serializeOutputFile(String outputFilePath) {
+	private static void serializeOutputFile(String outputFilePath, DeserializedJson system) {
 		Gson gson = new GsonBuilder()
 			.excludeFieldsWithoutExposeAnnotation()
 			.setPrettyPrinting()
 			.create();
 
 		try (Writer writer = Files.newBufferedWriter(Paths.get(outputFilePath))) {
-			writer.write(gson.toJson( Cluster.getInstance().getStatistics() ));
+			LinkedTreeMap<String,Object> temp = new LinkedTreeMap<>();
+			temp.put("students", system.getStudents() );
+			temp.put("conferences", system.getConferences() );
+			temp.put("statistics", Cluster.getInstance().getStatistics() );
+			writer.write(gson.toJson(temp, LinkedTreeMap.class));
 		}
 		catch (Exception ex) {
 			synchronizedPrintStackTrace(ex); // TODO : remove??

@@ -49,7 +49,7 @@ public class GPU {
 	private byte vRAMCapacity;	// according to the type of the gpu
 	private int currentBatchIndex;
 	private int numberOfTrainedSamples;
-	private int gpuTimeUsed;
+	//private int gpuTimeUsed;
 	// endregion Added fields
 
 
@@ -63,7 +63,7 @@ public class GPU {
 
 		modelEventsQueue = new LinkedList<>();
 		vRAM = new ArrayDeque<>();
-		gpuTimeUsed = 0;
+		//gpuTimeUsed = 0;
     }
 
 
@@ -209,7 +209,8 @@ public class GPU {
 
 
 		if( ! vRAM.isEmpty()) { // TODO:Left unsynched!!
-			++gpuTimeUsed;
+			//++gpuTimeUsed;
+			increaseTotalGPUTimeUsed();
 			DataBatch batch = vRAM.peek(); // TODO:Left unsynched!!
 
 			if ( ! batch.isInTraining()) {
@@ -259,7 +260,12 @@ public class GPU {
 	}
 
 
-	public void updateTotalGPUTimeUsed() {
-		 cluster.updateTotalGPUTimeUsed(gpuTimeUsed);;
+	public void increaseTotalGPUTimeUsed() {
+		 cluster.increaseTotalGPUTimeUsed(1);;
 	}
+
+
+    // public int getNumberOfMessagesInQueue() {
+    //     return modelEventsQueue.size();
+    // }
 }

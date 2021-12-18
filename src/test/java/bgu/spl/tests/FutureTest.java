@@ -2,6 +2,8 @@ package bgu.spl.tests;
 
 import static org.junit.Assert.*;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Before;
 import org.junit.After;
 import org.junit.Test;
@@ -23,7 +25,9 @@ public void setUp(){
 
 @Test
 public void testGetBeforeResolved(){
-    assertEquals("Expected output of future.get() to be null",null,future.get());
+    
+
+    assertEquals("Expected output of future.get() to be null",null,future.get(10,TimeUnit.MILLISECONDS));
     
 }
 
@@ -38,7 +42,7 @@ public void testResolve(){
     
     future.resolve(e);
 
-    assertEquals("Expected output of future.get() to be ExampleEvent e",e,future.get());
+    assertEquals("Expected output of future.get() to be ExampleEvent e",future.get(),e);
     assertEquals("Expected output of future.isDone() to be true, instead got false",future.isDone(), true);
 
 }

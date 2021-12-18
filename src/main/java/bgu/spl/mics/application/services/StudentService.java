@@ -15,6 +15,7 @@ import bgu.spl.mics.application.messages.PublishResultsEvent;
 import bgu.spl.mics.application.messages.TestModelEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
+import bgu.spl.mics.application.objects.ConfrenceInformation;
 import bgu.spl.mics.application.objects.Model;
 import bgu.spl.mics.application.objects.Student;
 import bgu.spl.mics.application.objects.Model.Status;
@@ -66,56 +67,59 @@ public class StudentService extends MicroService {
     @Override
     protected void initialize() {
 	
-		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
-			if (waitingFuture != null) {
-				if (waitingFuture.isDone()) {
-					Model currentModel = waitingFuture.get();
-					if (currentModel.getStatus() == Status.Trained) {
-						
-						student.addTrainedModel(currentModel);
-						
-						/* currentModel =  */sendEvent(new TestModelEvent(currentModel)).get(); // TODO: check what happens if returns null (if could happen)
+		subscribeBroadcast(
+			TickBroadcast.class, tickBroadcast -> {
+				if (waitingFuture != null) {
+					if (waitingFuture.isDone()) {
+						Model currentModel = waitingFuture.get();
+						if (currentModel.getStatus() == Status.Trained) {
+							
+							student.addTrainedModel(currentModel);
+							
+							/* currentModel =  */sendEvent(new TestModelEvent(currentModel)).get(); // TODO: check what happens if returns null (if could happen)
 
-						if (currentModel.getResults() == Model.Results.Good) {
-							sendEvent(new PublishResultsEvent(currentModel));						
-						}
-
-						waitingFuture=null;
-
-						if (modelsIterator.hasNext()) { // waitingFuture == null
-							waitingFuture = sendEvent(new TrainModelEvent(modelsIterator.next()));
-						
-							//TODO: remove debug
-							synchronized(System.out){
-								System.out.println(getName()+" Sending model "+currentModel.getName());
+							if (currentModel.getResults() == Model.Results.Good) {
+								sendEvent(new PublishResultsEvent(currentModel));						
 							}
 
+							waitingFuture=null;
+
+							if (modelsIterator.hasNext()) { // waitingFuture == null
+								currentModel = modelsIterator.next();
+								waitingFuture = sendEvent(new TrainModelEvent(currentModel));
+							
+								//TODO: remove debug
+								synchronized(System.out){
+									System.out.println("(if) " + getName()+" Sending model "+currentModel.getName());
+								}
+
+							}
+						
 						}
-					
 					}
 				}
-			}
-			else if (/*!Thread.currentThread().isInterrupted() && */ modelsIterator.hasNext()) { // waitingFuture == null
+				else if (modelsIterator.hasNext()) { // waitingFuture == null
 					Model currentModel=modelsIterator.next();
 					waitingFuture = sendEvent(new TrainModelEvent(currentModel));
 					//TODO: remove debug
 					synchronized(System.out){
-						System.out.println(getName()+" Sending model "+currentModel.getName());
+						System.out.println("(else if) " + getName()+" Sending model "+currentModel.getName());
 					}
 				}
 
-			if (tickBroadcast.isLast()) {
+				if (tickBroadcast.isLast()) {
 
-				
-				// TODO: remove debug block
-			//	CRMSRunner.synchronizedSyso("student "+getName()+" publications= "+student.getPublications()+" papers read= "+student.getPapersRead()+"\n");
-				synchronized (System.out) {
-					System.out.println("[*] " + getName() + ": got LAST tick");
+					
+					// TODO: remove debug block
+				//	CRMSRunner.synchronizedSyso("student "+getName()+" publications= "+student.getPublications()+" papers read= "+student.getPapersRead()+"\n");
+					synchronized (System.out) {
+						System.out.println("[*] " + getName() + ": got LAST tick");
+					}
+
+					terminate();
 				}
-
-				terminate();
 			}
-		});
+		);
 
 		subscribeBroadcast(PublishConferenceBroadcast.class, message->{ // TODO: move into student object's function
 			for(Model m: message.getSuccessfulModels()){
@@ -127,6 +131,11 @@ public class StudentService extends MicroService {
 
 		});
     }
+
+
+	public Student getStudent() {
+		return student;
+	}
 
 
 

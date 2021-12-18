@@ -2,8 +2,10 @@ package bgu.spl.mics.application.objects;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonElement;
 import com.google.gson.internal.LinkedTreeMap;
 
 import bgu.spl.mics.MicroService;
@@ -17,7 +19,8 @@ import bgu.spl.mics.application.services.TimeService;
 public class DeserializedJson {
 	TimeService timeService;
 	ArrayList<MicroService> microServices;
-
+	ArrayList<Student> students;
+	ArrayList<ConfrenceInformation> conferences;
 
 	@SuppressWarnings("unchecked")
 	public DeserializedJson(LinkedTreeMap<String,Object> _deserializedJson) {
@@ -36,7 +39,9 @@ public class DeserializedJson {
 							ArrayList<Map<String,Object>> _conferences, int _tickTime, int _programDuration) {
 
 		microServices = new ArrayList<>();
-
+		students = new ArrayList<>();
+		conferences = new ArrayList<>();
+		
 		for ( String gpu : _gpus ) {
 			microServices.add( new GPUService(gpu) );
 		}
@@ -46,11 +51,15 @@ public class DeserializedJson {
 		}
 
 		for ( Map<String,Object> conference : _conferences) {
-			microServices.add( new ConferenceService(conference) );
+			ConferenceService temp = new ConferenceService(conference);
+			microServices.add( temp );
+			conferences.add(temp.getConference());
 		}
 
 		for ( Map<String,Object> student : _students ) {
-			microServices.add( new StudentService(student) );
+			StudentService temp = new StudentService(student);
+			microServices.add( temp );
+			students.add(temp.getStudent());
 		}
 
 		timeService = new TimeService(_programDuration, _tickTime);
@@ -69,4 +78,14 @@ public class DeserializedJson {
 	public TimeService getTimeService() {
 		return timeService;
 	}
+
+
+    public ArrayList<Student> getStudents() {
+        return students;
+    }
+
+
+    public ArrayList<ConfrenceInformation> getConferences() {
+        return conferences;
+    }
 }

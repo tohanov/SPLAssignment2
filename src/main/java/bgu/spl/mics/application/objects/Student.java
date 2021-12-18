@@ -36,7 +36,7 @@ public class Student {
 		publications = 0;
 		papersRead = 0;
         trainedModels=new ArrayList<>();
-        Cluster.getInstance().registerStudent(this); //FIXME: can student talk to cluster??
+        // Cluster.getInstance().registerStudent(this); //FIXME: can student talk to cluster??
 	}
 	// endregion for serialization from json
 	
@@ -78,6 +78,10 @@ public class Student {
 
 	public void addTrainedModel(Model modelToAdd) {
 		trainedModels.add(modelToAdd);
+	}
+
+	public ArrayList<Model> getTrainedModels(){
+		return trainedModels;
 	}
 
 	// public ArrayList<Model> getModels(){ // FIXME

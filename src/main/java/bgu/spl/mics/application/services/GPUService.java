@@ -57,7 +57,7 @@ public class GPUService extends MicroService {
 
 			if (tickBroadcast.isLast()) {
 
-				gpu.updateTotalGPUTimeUsed();	
+				//gpu.updateTotalGPUTimeUsed();	
 
 				// TODO: remove debug block
 				synchronized (System.out) {
@@ -82,6 +82,11 @@ public class GPUService extends MicroService {
 				MessageBusImpl.getInstance().complete(testModelEvent, testModelEvent.getValue());
 			
 		});
+    }
+
+
+    public GPU getGPU() {
+        return gpu;
     }
 
 

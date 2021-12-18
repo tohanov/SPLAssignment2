@@ -2,6 +2,7 @@ package bgu.spl.mics.example.services;
 
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.example.messages.ExampleEvent;
+import junit.framework.Test;
 
 public class ExampleEventHandlerService extends MicroService {
 
@@ -30,6 +31,7 @@ public class ExampleEventHandlerService extends MicroService {
         System.out.println("Event Handler " + getName() + " started");
         
         subscribeEvent(ExampleEvent.class, ev -> {
+            this.notify();
             mbt--;
             System.out.println("Event Handler " + getName() + " got a new event from " + ev.getSenderName() + "! (mbt: " + mbt + ")");
             complete(ev, "Hello from " + getName());
@@ -39,5 +41,7 @@ public class ExampleEventHandlerService extends MicroService {
             }
         });
     }
+
+    
 
 }

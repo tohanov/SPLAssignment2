@@ -17,13 +17,20 @@
 			"mainClass": "bgu.spl.mics.application.CRMSRunner",
 			"projectName": "spl221ass2",
 			"args": ["example_input.json"] //outputvscode.json"
-		} // ,
+		}  ,
 		// {
 		// 	"type": "java",
 		// 	"name": "Launch ExampleManager",
 		// 	"request": "launch",
 		// 	"mainClass": "bgu.spl.mics.example.ExampleManager",
 		// 	"projectName": "spl221ass2"
-		// }
+		// },
+		{
+			"type": "java",
+			"name": "Launch Tests",
+			"request": "launch",
+			"mainClass": "bgu.spl.tests.MessageBusTest",
+			"projectName": "spl221ass2"
+		}
 	]
 }

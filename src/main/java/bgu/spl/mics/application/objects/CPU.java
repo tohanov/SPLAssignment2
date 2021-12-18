@@ -16,8 +16,8 @@ public class CPU {
     private Collection<DataBatch> data;
     private Cluster cluster;
     private int ticksToCompletion;
-    private int cpuTimeUsed;
-    private int totalBatchesProcessed;
+    //private int cpuTimeUsed;
+    //private int totalBatchesProcessed;
 
 
 	// region for serialization from json
@@ -27,8 +27,8 @@ public class CPU {
 		cluster = Cluster.getInstance();
 		cluster.registerCPU(this);
 		ticksToCompletion = 0;
-		cpuTimeUsed = 0;
-		totalBatchesProcessed = 0;
+		//cpuTimeUsed = 0;
+		//totalBatchesProcessed = 0;
 	}
 	// endregion for serialization from json
 
@@ -56,7 +56,7 @@ public class CPU {
             // }
 
             --ticksToCompletion;
-            ++cpuTimeUsed;
+            increaseTotalCPUTimeUsed();
 
             // synchronized(System.out) {
             //     System.out.println("\n[*] CPU cores=" + cores +
@@ -75,7 +75,9 @@ public class CPU {
 			}
 
 			if (batch.process()) {
-				++totalBatchesProcessed;
+				//++totalBatchesProcessed;
+                increaseTotalBatchesProcessed();
+
 				cluster.sendProcessedBatchToTraining(removeBatch());    
 
                 // synchronized (System.out) {
@@ -150,12 +152,12 @@ public class CPU {
     }
 
 
-    public void updateTotalCPUTimeUsed() {
-        cluster.updateTotalCPUTimeUsed(cpuTimeUsed);
+    public void increaseTotalCPUTimeUsed() {
+        cluster.increaseTotalCPUTimeUsed(1);
     }
 
 
-    public void updateTotalBatchesProcessed(){
-        cluster.updateTotalBatchesProcessed(totalBatchesProcessed);
+    public void increaseTotalBatchesProcessed(){
+        cluster.increaseTotalBatchesProcessed(1);
     }
 }

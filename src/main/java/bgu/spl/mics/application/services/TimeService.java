@@ -46,9 +46,9 @@ public class TimeService extends MicroService {
 				messageBus.sendBroadcast(tick);
 
 				// TODO: remove debug block
-				synchronized (System.out) {
-					System.out.println("[*] Timeservice: sent tick " + i);
-				}
+				// synchronized (System.out) {
+				// 	System.out.println("[*] Timeservice: sent tick " + i);
+				// }
 			}
 
 			// TODO : move last tick into the loop as well

@@ -21,7 +21,6 @@ public class Future<T> {
 	 */
 	public Future() {
 		result = null;
-	//	resultLock=new Object();
 	}
 	
 	
@@ -59,10 +58,8 @@ public class Future<T> {
      * @return true if this object has been resolved, false otherwise
      */
 	public boolean isDone() {
-		//TODO: implement this.
-		// synchronized (resultLock) {
-			return result != null;
-		// }
+		return result != null;
+		
 	}
 	
 
@@ -85,11 +82,11 @@ public class Future<T> {
 					this.wait(unit.toMillis(timeout));
 				}
 				catch (InterruptedException exception) {
-					//Thread.currentThread().interrupt();
+					//do nothing
 				}
 			}
 		}
 
-		return result; // TODO: move into synchronized body??
+		return result; 
 	}
 }
