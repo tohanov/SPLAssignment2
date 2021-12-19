@@ -34,11 +34,11 @@ public class CPU {
 
     
 	/**
-     * @param type Type 
+     * @param type instanceof Data.type 
      * @pre type==Data.Type.Images || type==Data.Type.Images || type==Data.Type.Images 
-     *  
+     * @return: time for cpu to process
      */
-	int calculateProcessingTime(Data.Type type) {
+	public int calculateProcessingTime(Data.Type type) {
         
 		if (type == Type.Images)
 			return 32 / cores * 4;
@@ -49,6 +49,12 @@ public class CPU {
     }
 
 
+    /**
+     * @inv: ticksToCompletion >= 0
+     * @pre: cpu received a tick
+     * @post: ticksToCompletion == @pre(ticksToCompletion) - 1
+     * 
+     */
 	public void tickCallback() {
         if( ! isEmpty()) {
             // synchronized (System.out) {
@@ -92,7 +98,7 @@ public class CPU {
      * 
      * @param toAdd The batch to add
      * @pre toAdd!=null
-     * @post data.last()=toAdd
+     * @post data.last() == toAdd
      */
     public void addBatch(DataBatch toAdd){
         synchronized(data){
@@ -108,12 +114,8 @@ public class CPU {
         //         "\ntype=" + toAdd.getData().getType());
         // }
     }
-
-
-    /**
-     * @post data.size=@pre databatch.size()-1
-     */
-    public DataBatch removeBatch(){
+    
+    private DataBatch removeBatch(){
         DataBatch removed;
 
 		synchronized (data) {
@@ -124,40 +126,30 @@ public class CPU {
     }
 
 
-	/**
-	 * @return True if CPU is ready for batches, False otherwise
-	 */
-    public boolean isEmpty(){
+	private boolean isEmpty(){
         return data.isEmpty();
     }
 
 
-    public boolean isCurrentBatchReady(){
-		return ((ArrayDeque<DataBatch>) data).getFirst().isProcessed();
-    }
-
-
-	public int getCores() {
-		return cores;
-	}
-
-
-    public Cluster getCluster(){
-        return cluster;
-    }
-
-
+    // public boolean isCurrentBatchReady(){
+	// 	return ((ArrayDeque<DataBatch>) data).getFirst().isProcessed();
+    // }
+	
     public int getTickToCompletion(){
         return ticksToCompletion;
     }
 
 
-    public void increaseTotalCPUTimeUsed() {
+    private void increaseTotalCPUTimeUsed() {
         cluster.increaseTotalCPUTimeUsed(1);
     }
 
 
-    public void increaseTotalBatchesProcessed(){
+    private void increaseTotalBatchesProcessed(){
         cluster.increaseTotalBatchesProcessed(1);
+    }
+
+    public ArrayDeque<DataBatch> getData(){
+        return (ArrayDeque<DataBatch>) data;
     }
 }

@@ -350,8 +350,8 @@ public class MessageBusImpl implements MessageBus {
 	// endregion Test Methods
 
 
-    public Object getNumberOfMessagesInQueue(MicroService ms) {
-        return microServicesHashMap.get(ms).size();
-    }
+    // public Object getNumberOfMessagesInQueue(MicroService ms) {
+    //     return microServicesHashMap.get(ms).size();
+    // }
 }
 

@@ -34,6 +34,10 @@ public class Cluster {
 		@Expose private double Batches_CPUTime_Ratio;
 		@Expose private double Batches_GPUTime_Ratio;
 		// @Expose private int modelsTrained;	//FIXME
+
+		public AtomicInteger getCPUTimeUsed(){
+			return cpuTimeUsed;
+		}
 	}
 
 

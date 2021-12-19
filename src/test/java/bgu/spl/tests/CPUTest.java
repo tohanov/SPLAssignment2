@@ -1,60 +1,63 @@
-// package bgu.spl.tests;
+package bgu.spl.tests;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
 
-// import static org.junit.Assert.*;
+import bgu.spl.mics.application.objects.CPU;
+import bgu.spl.mics.application.objects.Cluster;
+import bgu.spl.mics.application.objects.Data;
+import bgu.spl.mics.application.objects.DataBatch;
+import bgu.spl.mics.application.objects.Data.Type;
 
-// import org.junit.Before;
-// import org.junit.After;
-// import org.junit.Test;
+public class CPUTest {
 
-// import bgu.spl.mics.application.objects.CPU;
-// import bgu.spl.mics.application.objects.Cluster;
-// import bgu.spl.mics.application.objects.Data;
-// import bgu.spl.mics.application.objects.DataBatch;
- 
+    private CPU cpu;
 
-// public class CPUTest {
+    @Before
+    public void setUp(){
+        cpu=new CPU(32);
+    }
 
-//     private CPU cpu;
+    @Test
+    public void testCalculateProcessingTime(){
 
-//     @Before
-//     public void setUp(){
-//         cpu=new CPU(8, Cluster.getInstance());
-//     }
+        assertEquals(cpu.calculateProcessingTime(Type.Images), 4);
+        assertEquals(cpu.calculateProcessingTime(Type.Text), 2);
+        assertEquals(cpu.calculateProcessingTime(Type.Tabular), 1);
 
-//     @Test
-//     public void testIsReady(){
-//         assertEquals("Expected cpu.isReady() to be true, instead got false",true, cpu.isReady());
+        CPU cpu2=new CPU(8);
+
+        assertEquals(cpu2.calculateProcessingTime(Type.Images), 16);
+        assertEquals(cpu2.calculateProcessingTime(Type.Text), 8);
+        assertEquals(cpu2.calculateProcessingTime(Type.Tabular), 4);
+    }
+
+    @Test
+    public void testAddBatch(){
+        DataBatch toAdd=new DataBatch(new Data(Data.Type.Images, 100000), 0, null);
+        cpu.addBatch(toAdd);
+
+        assertEquals("",toAdd, cpu.getData().peek());
+    }
+   
+    @Test
+    public void testTickCallback(){
         
-//     }
+        CPU testCpu=new CPU(16);
+        assertEquals(0, testCpu.getTickToCompletion());
 
-//     @Test
-//     public void testSetBatch(){ // TODO ask
-//         DataBatch dataBatch=new DataBatch((new Data(Data.Type.Images, 0, 10)), 0);
-//         cpu.addBatch(dataBatch);
-//         assertEquals("Expected cpu.isReady() to be false, instead got true",false, cpu.isReady());
+        DataBatch batch=new DataBatch(new Data(Data.Type.Images, 100000), 0, null);
+        testCpu.addBatch(batch);
 
-//     }
+        assertEquals(testCpu.calculateProcessingTime(Type.Images),testCpu.getTickToCompletion());
+        assertFalse(batch.isInProcessing());
+        assertEquals(0,Cluster.getInstance().getStatistics().getCPUTimeUsed().get());
 
-//     @Test
-//     public void testRemoveBatch(){
-//         DataBatch dataBatch=new DataBatch((new Data(Data.Type.Images, 0, 10)), 0);
-//         cpu.addBatch(dataBatch);
-       
-//         cpu.removeBatch();
-//         assertEquals("Expected cpu.isReady() to be true, instead got false",true, cpu.isReady());
-//     }
-
-//     @Test
-//     public void testProcessSample(){
-//         DataBatch dataBatch=new DataBatch((new Data(Data.Type.Images, 0, 10)), 0);
-//         cpu.addBatch(dataBatch);
-//         assertEquals(dataBatch.getData().getProcessed(), 0);
-//         cpu.processSample();
-//         assertEquals(dataBatch.getData().getProcessed(), 1);
-
-
-//     }
-
-
+        testCpu.tickCallback();
+        assertTrue(batch.isInProcessing());
+        assertNotEquals(testCpu.calculateProcessingTime(Type.Images), testCpu.getTickToCompletion());
+        
+        assertEquals(1,Cluster.getInstance().getStatistics().getCPUTimeUsed().get());
+    }
     
-// }
+}

@@ -138,6 +138,11 @@ public class StudentService extends MicroService {
 	}
 
 
+	public ArrayList<Model> getModels() {
+		return models;
+	}
+
+
 
 			// if(currentModel.getStatus()==(Model.Status.PreTrained)){
 			// 	currentModel.changeStatus(Model.Status.Training);

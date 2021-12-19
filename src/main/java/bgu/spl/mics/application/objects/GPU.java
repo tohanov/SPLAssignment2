@@ -118,7 +118,11 @@ public class GPU {
 	}
 	// endregion for serialization from json
 
-
+	/**
+	 * @param modelEvent event to be dealt with
+	 * @post: if modelEventQueue.size() >= @pre:modelEventQueue.size()
+	 * @return modelEventQueue.size() > @pre:modelEventQueue.size()
+	 */
 	public boolean addModel(Event<Model> modelEvent) {
 		if(modelEventsQueue.isEmpty() && modelEvent.getValue().getStatus()==Model.Status.Trained){	//if TestModelEvent execute immediately
 			testModel((TestModelEvent) modelEvent);
@@ -137,6 +141,11 @@ public class GPU {
 	}
 
 
+	/**
+	 * @pre: Received a tick
+	 * @post: model.getStatus() > @pre(model.getStatus())
+	 * @return: ArrayList of eventModels of models that contains all models that were trained/tested this ticks. if no such models exist, returns null
+	 */
 	public ArrayList<Event<Model>> actOnTick() {
 		if ( ! modelEventsQueue.isEmpty()) {
 			if (modelEventsQueue.peek().getValue().getStatus() == Status.PreTrained) { // (trainingInProgress==false) {
@@ -166,8 +175,13 @@ public class GPU {
 		return null;
 	}
 
-
-	public void initBatchTraining() {
+	/**
+	 * @inv: modelsEventsQueue.isEmpty()==false 
+	 * @pre: modelEventsQueue.peek().getValue().getStatus == preTrained
+	 * @post: modelEventsQueue.peek().getValue().getStatus == Training
+	 * 
+	 */
+	private void initBatchTraining() {
 		model = modelEventsQueue.peek().getValue();
 		model.advanceStatus();
 		currentBatchIndex = 0;
@@ -179,8 +193,13 @@ public class GPU {
 		// }
 	}
 
-
-	public boolean train() {
+	/**
+	 * @pre: currentBatchIndex <= model.getData().getSize() 
+	 * @post: currentBatchIndex >= @pre(currentBatchIndex) && cluster.statistics.totalGPUTimeUsed  == @pre(cluster.statistics.totalGPUTimeUsed) + 1
+	 * 
+	 * @return true if batch is trained
+	 */
+	private boolean train() {
 		// TODO : remove debug
 		// synchronized(System.out){
 		// 	System.out.println("\n[*] Before batch creation loop, model=" + model.getName() +
@@ -235,19 +254,34 @@ public class GPU {
 		return false;
 	}
 
-
-	public boolean hasFinishedTraining() {
+	/**
+	 * @pre: modelsEventQueue.isEmpty() == false 
+	 * @pre: model.getStatus() == training
+	 * @return true if current model is trained
+	 */
+	private boolean hasFinishedTraining() {
 		return numberOfTrainedSamples >= model.getData().getSize();
 	}
 
 
+	/**
+	 * @param databatch
+	 * @post: vRAM.size() == @pre(vRAM.size()) + 1
+	 * post@: vRAM.getLast() == databatch
+	 */
 	public void returnProcessedBatch(DataBatch databatch) {
 		synchronized (vRAM) {
 			vRAM.add(databatch);
 		}
 	}
 
-
+	/**
+	 * @param testModelEvent: trained model to be tested
+	 * @pre: model.status== trained
+	 * @pre: model.getResults == none
+	 * @post: model.getStatus()==tested
+	 * @post: model.getResults == Good || model.getResults == BAD
+	 */
 	public void testModel(TestModelEvent testModelEvent) {
 		Model model = testModelEvent.getValue();
 		double chance = (model.getStudent().getStatus() == Student.Degree.MSc) ? 0.6 : 0.8; // MSC : PHD
@@ -259,13 +293,17 @@ public class GPU {
 		// CRMSRunner.synchronizedSyso("testing model "+model.getName()+", result is: "+model.getResults()+" status is: "+model.getStatus());
 	}
 
-
-	public void increaseTotalGPUTimeUsed() {
+	
+	private void increaseTotalGPUTimeUsed() {
 		 cluster.increaseTotalGPUTimeUsed(1);;
 	}
 
 
-    // public int getNumberOfMessagesInQueue() {
-    //     return modelEventsQueue.size();
-    // }
+	public int getNumberOfMessagesInQueue() {
+		return modelEventsQueue.size();
+	}
+
+	public ArrayDeque<DataBatch> getVRAM(){
+		return vRAM;
+	}
 }

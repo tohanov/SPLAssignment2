@@ -2,9 +2,12 @@ package bgu.spl.tests;
 
 import static org.junit.Assert.*;
 
+import java.util.Map;
 import java.util.concurrent.locks.Condition;
 
 import javax.lang.model.type.NullType;
+
+import com.google.gson.internal.LinkedTreeMap;
 
 import org.junit.Before;
 import org.junit.After;
@@ -20,6 +23,7 @@ import bgu.spl.mics.application.messages.PublishResultsEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
 import bgu.spl.mics.application.objects.*;
+import bgu.spl.mics.application.objects.Model.Results;
 import bgu.spl.mics.application.services.ConferenceService;
 import bgu.spl.mics.application.services.GPUService;
 import bgu.spl.mics.application.services.StudentService;
@@ -31,7 +35,7 @@ public class MessageBusTest {
 
     MessageBusImpl messageBus;
     MicroService microservice;
-	Thread messageBusThread = null;
+	//Thread messageBusThread = null;
 	// Thread m1thrd = null;
 
 
@@ -48,11 +52,11 @@ public class MessageBusTest {
 
 	@After
 	public void tearDown() {
-		if (messageBusThread != null) {
-			messageBusThread.interrupt();
-			try { messageBusThread.join(); }
-			catch (Exception e) { }
-		}
+		// if (messageBusThread != null) {
+		// 	messageBusThread.interrupt();
+		// 	try { messageBusThread.join(); }
+		// 	catch (Exception e) { }
+		// }
 		// if (m1thrd != null) {
 		// 	messageBusThread.interrupt();
 		// 	try { messageBusThread.join(); }
@@ -110,11 +114,14 @@ public class MessageBusTest {
 
     @Test
     public void testSendEvent(){
-        GPUService testGPUService = new GPUService("test");
+        Map<String,Object> map = new LinkedTreeMap<>();
+        map.put("name", "testConf");
+        map.put("date", 2000000.0);
+        ConferenceService tesConService = new ConferenceService(map);
         
 
 
-		Thread t1 = new Thread(testGPUService);
+		Thread t1 = new Thread(tesConService);
 		t1.start();
         try {
             Thread.currentThread().sleep(2000);
@@ -124,12 +131,20 @@ public class MessageBusTest {
         }
 
 
-		assertEquals("message queue should be empty!", 0,messageBus.getNumberOfMessagesInQueue(testGPUService));
-        messageBus.sendEvent(new TrainModelEvent(new Model("testModel", "Images", 1000000, new Student("testStudent", "CS", "PHD"))));
-        assertEquals("message queue should have 1 message!",1, messageBus.getNumberOfMessagesInQueue(testGPUService));
+		assertEquals("message queue should be empty!", 0,tesConService.getConference().returnSuccessfulModels().size());
+        messageBus.sendEvent(new PublishResultsEvent(new Model("testModel", "Images", 1000000, new Student("testStudent", "CS", "PHD"))));
+        try {
+            Thread.currentThread().sleep(2000);
+        } catch (InterruptedException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+		assertNotEquals("message queue should be empty!", 0,tesConService.getConference().returnSuccessfulModels().size());
         
-		t1.interrupt();
+		
 		try {
+            messageBus.sendBroadcast(new TickBroadcast(true));
 			t1.join();
 			
 		} catch (Exception e) {
@@ -141,11 +156,8 @@ public class MessageBusTest {
     @Test
     public void testSendBroadcast(){
         GPUService testGPUService = new GPUService("test");
-        
-
-
-		Thread t1 = new Thread(testGPUService);
-		t1.start();
+        Thread t1 = new Thread(testGPUService);
+		t1.start(); //awaits message in the run() loop
         try {
             Thread.currentThread().sleep(2000);
         } catch (InterruptedException e1) {
@@ -154,16 +166,87 @@ public class MessageBusTest {
         }
 
 
-		assertEquals("message queue should be empty!", 0,messageBus.getNumberOfMessagesInQueue(testGPUService));
-        messageBus.sendBroadcast(new TickBroadcast(false));
-        assertEquals("message queue should have 1 message!",1, messageBus.getNumberOfMessagesInQueue(testGPUService));
-        
-		t1.interrupt();
-		try {
-			t1.join();
-			
-		} catch (Exception e) {
+        assertTrue("should be alive", t1.isAlive());
 
-		}
+        messageBus.sendBroadcast(new TickBroadcast(true));
+
+        try {
+            Thread.currentThread().sleep(2000);
+
+            assertFalse("should be dead", t1.isAlive());
+            t1.join();
+        } catch (InterruptedException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
     }
+
+    @Test
+    public void testComplete(){
+        GPUService testGPUService = new GPUService("test");
+        Thread t1 = new Thread(testGPUService);
+		t1.start(); //awaits message in the run() loop
+        try {
+            Thread.currentThread().sleep(2000);
+        } catch (InterruptedException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        Model model=new Model("testModel", "Images", 1000000, new Student("testStudent", "CS", "PHD"));
+        model.advanceStatus();model.advanceStatus();model.advanceStatus();
+        TrainModelEvent event=new TrainModelEvent(model);
+        Future<Model> f=messageBus.sendEvent(event);
+
+        assertFalse("future is not resolved yet", f.isDone());
+
+        messageBus.complete(event, model);
+
+        assertTrue("future should be resolved", f.isDone());
+        assertEquals(model, f.get());
+
+
+
+
+    }
+
+    @Test
+    public void testAwaitMessage(){
+        GPUService testGPUService = new GPUService("test");
+        Thread t1 = new Thread(testGPUService);
+		t1.start(); //awaits message in the run() loop
+        try {
+            Thread.currentThread().sleep(2000);
+        } catch (InterruptedException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+
+        assertTrue("should be alive", t1.isAlive());
+        try {
+            Thread.currentThread().sleep(2000);
+        } catch (InterruptedException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        assertTrue("should be alive", t1.isAlive());
+
+        messageBus.sendBroadcast(new TickBroadcast(true));
+
+        try {
+            Thread.currentThread().sleep(2000);
+        } catch (InterruptedException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        assertFalse("should be dead", t1.isAlive());
+        
+    }
+
+
 }
+
+
