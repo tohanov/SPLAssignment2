@@ -60,7 +60,7 @@ public class CRMSRunner {
 				// get notified when the new thread finished initialization
 				try { microService.wait(); }
 				catch (InterruptedException ie) {
-					synchronizedPrintStackTrace(ie); // TODO: remove??
+					synchronizedPrintStackTrace(ie);
 				}
 			}
 		}
@@ -85,7 +85,7 @@ public class CRMSRunner {
 			return new DeserializedJson( new Gson().fromJson( reader, LinkedTreeMap.class) );
 		}
 		catch (Exception ex) {
-			synchronizedPrintStackTrace(ex); // TODO: remove??
+			synchronizedPrintStackTrace(ex);
 		}
 
 		return null;
@@ -113,7 +113,7 @@ public class CRMSRunner {
 			writer.write(gson.toJson(temp, LinkedTreeMap.class));
 		}
 		catch (Exception ex) {
-			synchronizedPrintStackTrace(ex); // TODO : remove??
+			synchronizedPrintStackTrace(ex);
 		}
 	}
 

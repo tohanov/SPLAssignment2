@@ -2,11 +2,13 @@ package bgu.spl.mics.application.objects;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 import bgu.spl.mics.application.messages.TestModelEvent;
-import bgu.spl.mics.application.objects.Model.Status;
+import bgu.spl.mics.application.messages.TrainModelEvent;
 import bgu.spl.mics.Event;
+
 
 /**
  * Passive object representing a single GPU.
@@ -14,7 +16,7 @@ import bgu.spl.mics.Event;
  * Add fields and methods to this class as you see fit (including public methods and constructors).
  */
 public class GPU {
-	
+
     /**
      * Enum representing the type of the GPU.
      */
@@ -29,8 +31,9 @@ public class GPU {
 
 
 	// region Added fields
-	// FIXME: Make modelsQueue into priority queue? by minimum size of model
-	private LinkedList<Event<Model>> modelEventsQueue;
+	private PriorityQueue<Event<Model>> modelEventsQueue;
+	// private LinkedList<Event<Model>> modelEventsQueue;
+	private Event<Model> currentEvent;
 	private ArrayDeque<DataBatch> vRAM;
 	private final byte trainingDelay; // according to the type of the gpu
 	private byte vRAMCapacity;	// according to the type of the gpu
@@ -46,9 +49,33 @@ public class GPU {
 
 		vRAMCapacity = calcVRAMCapacity();
 		trainingDelay = calcTrainingDelay();
-
-		modelEventsQueue = new LinkedList<>();
+		
 		vRAM = new ArrayDeque<>();
+		// modelEventsQueue = new LinkedList<>();
+
+		// priority queue that sorts by model size
+		modelEventsQueue = new PriorityQueue<Event<Model>> (
+			new Comparator<Event<Model>>() {
+				@Override
+				public int compare(Event<Model> e1, Event<Model> e2) {
+					if (e1 instanceof TestModelEvent) {
+						return -1;
+					}
+					else if (e2 instanceof TestModelEvent) {
+						return 1;
+					}
+					else { // both are of type for training
+						int val = ( ((TrainModelEvent)e1).getValue().getData().getSize() - ((TrainModelEvent)e2).getValue().getData().getSize() );
+
+						if (GPU.this.type == Type.RTX3090 || GPU.this.type == Type.RTX2080) {
+							return -val;
+						}
+
+						return val;
+					}
+				}
+			}
+		);
     }
 
 
@@ -110,20 +137,45 @@ public class GPU {
 	 * @return modelEventQueue.size() > @pre:modelEventQueue.size()
 	 */
 	public boolean addModel(Event<Model> modelEvent) {
-		if(modelEventsQueue.isEmpty() && modelEvent.getValue().getStatus()==Model.Status.Trained){	// if TestModelEvent and no events in queue - execute immediately
+		if (model == null && modelEvent.getValue().getStatus() == Model.Status.Trained) { // if TestModelEvent and no events in queue - execute immediately
 			testModel((TestModelEvent) modelEvent);
 		 
 			return false;	// nothing added to queue
 		}
-		else if(modelEvent.getValue().getStatus()==Model.Status.Trained){
-			modelEventsQueue.add(1, modelEvent);
-		}
-		
-		else{	// if trainModelEvent
+		// esle : either model is not null or the gotten model isn't for testing
+		// so if : the gotten event is not for testing - it's for training and should be just added to the queue
+		// and else : current model is not null, meaning there's a model being trained by the GPU
+		// and the received event is for testing -- either way adding to the queue
+		else {
 			modelEventsQueue.add(modelEvent);
+
+			return true;
 		}
-		
-		return true; // added event to queue
+	}
+
+
+	private ArrayList<Event<Model>> trainAndCheck() {
+		if (train() == true) {
+			ArrayList<Event<Model>> eventsToHandle = new ArrayList<>();
+
+			// add event of model that finished training
+			eventsToHandle.add(currentEvent);
+			// reset the current model before next tick
+			model = null;
+			currentEvent = null;
+
+			// test all test events that got in the queue in the meantime and prepare for resolution by the service
+			while ( ! modelEventsQueue.isEmpty()
+					&& modelEventsQueue.peek().getValue().getStatus() == Model.Status.Trained) { // modelEventsQueue.peek()==testModelEvent(...)
+				
+				testModel((TestModelEvent) modelEventsQueue.peek());
+				eventsToHandle.add(modelEventsQueue.poll());
+			}
+
+			return eventsToHandle;
+		}
+
+		return null;
 	}
 
 
@@ -133,33 +185,27 @@ public class GPU {
 	 * @return: ArrayList of eventModels of models that contains all models that were trained/tested this ticks. if no such models exist, returns null
 	 */
 	public ArrayList<Event<Model>> actOnTick() {
-		if ( ! modelEventsQueue.isEmpty()) {
-			if (modelEventsQueue.peek().getValue().getStatus() == Status.PreTrained) { // (trainingInProgress==false) {
-				initBatchTraining();
+		if (model == null) {
+			// if queue is not empty then init training of models
+			if ( ! modelEventsQueue.isEmpty()) {
+				initBatchTraining(); // model put in status of training
+
+				return trainAndCheck();
 			}
+			// if queue is empty then there's nothing to do
+		}
+		else { //if (model.getStatus() == Status.Training) {
+			// --- model is not null, means we are in the process of training it
 
-			if (modelEventsQueue.peek().getValue().getStatus() == Status.Training) {
-				// train on this tick and see if finished training
-				if (train() == true) {
-					ArrayList<Event<Model>> eventsToHandle = new ArrayList<>();
+			// if model is in training
+				// train and check if done training
 
-					eventsToHandle.add(modelEventsQueue.poll());
+			// else not in training, shouldn't be possible since we're removing tested models when we removed a trained one
 
-					while ( ! modelEventsQueue.isEmpty()
-							&& modelEventsQueue.peek().getValue().getStatus() == Model.Status.Trained) { // modelEventsQueue.peek()==testModelEvent(...)
-						
-						testModel((TestModelEvent) modelEventsQueue.peek());
-						eventsToHandle.add(modelEventsQueue.poll());
-					}
-
-					return eventsToHandle;
-				}
-			}
-
+			return trainAndCheck();
 		}
 
-		// FIXME: split to smaller functions (queries + actions)
-		return null;
+		return null; // reaching here means there's nothing to do (both model is null and queue is empty)
 	}
 
 
@@ -167,10 +213,11 @@ public class GPU {
 	 * @inv: modelsEventsQueue.isEmpty()==false 
 	 * @pre: modelEventsQueue.peek().getValue().getStatus == preTrained
 	 * @post: modelEventsQueue.peek().getValue().getStatus == Training
-	 * 
 	 */
 	private void initBatchTraining() {
 		model = modelEventsQueue.peek().getValue();
+		currentEvent = modelEventsQueue.poll();
+
 		model.advanceStatus();
 		currentBatchIndex = 0;
 		numberOfTrainedSamples = 0;
@@ -197,7 +244,7 @@ public class GPU {
 		// 	  "\nemptyVRam=" + emptyVRAM +
 		// 	  "\n");
 		// }
-
+		
 		// send more batches to cluster if there's available space to store them when they get back
 		while (currentBatchIndex < model.getData().getSize() && vRAMCapacity != 0) {
 			DataBatch dataBatch = new DataBatch(model.getData(), currentBatchIndex, this);
@@ -215,9 +262,10 @@ public class GPU {
 		// 	  "\n");
 		// }	
 
-		if( ! vRAM.isEmpty()) { // FIXME:Left unsynched!!
+
+		if( ! vRAM.isEmpty()) { // left unsynched on purpose
 			updateTotalGPUTimeUsed();
-			DataBatch batch = vRAM.peek(); // FIXME:Left unsynched!!
+			DataBatch batch = vRAM.peek(); // left unsynched on purpose
 
 			if ( ! batch.isInTraining()) {
 				batch.initTraining(trainingDelay);

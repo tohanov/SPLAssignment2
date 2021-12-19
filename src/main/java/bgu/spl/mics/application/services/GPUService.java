@@ -71,7 +71,6 @@ public class GPUService extends MicroService {
 			// was tested now, needs to be resolved now
 			if (gpu.addModel(testModelEvent) == false)
 				MessageBusImpl.getInstance().complete(testModelEvent, testModelEvent.getValue());
-			
 		});
     }
 

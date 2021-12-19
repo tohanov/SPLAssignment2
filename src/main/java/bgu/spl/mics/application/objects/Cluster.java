@@ -76,7 +76,7 @@ public class Cluster {
 
 			CPUsMinHeapsByDataType.put(
 				type,
-				new PriorityQueue<>(
+				new PriorityQueue<> (
 					new Comparator<CPU>() {
 						@Override
 						public int compare(CPU first, CPU second) {

@@ -63,7 +63,7 @@ public class DeserializedJson {
 
 		timeService = new TimeService(_programDuration, _tickTime);
 
-		Collections.shuffle(microServices); // FIXME : rethink. maybe sort students by their model sizes
+		Collections.shuffle(microServices);
 	}
 
 
