@@ -51,13 +51,13 @@ public class CPUTest {
 
         assertEquals(testCpu.calculateProcessingTime(Type.Images),testCpu.getTickToCompletion());
         assertFalse(batch.isInProcessing());
-        assertEquals(0,Cluster.getInstance().getStatistics().getCPUTimeUsed().get());
+		assertEquals(0, Cluster.getInstance().getStatistics().getCPUTimeUsed().get());
 
         testCpu.tickCallback();
         assertTrue(batch.isInProcessing());
         assertNotEquals(testCpu.calculateProcessingTime(Type.Images), testCpu.getTickToCompletion());
         
-        assertEquals(1,Cluster.getInstance().getStatistics().getCPUTimeUsed().get());
+		assertEquals(1, Cluster.getInstance().getStatistics().getCPUTimeUsed().get());
     }
     
 }

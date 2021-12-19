@@ -2,24 +2,10 @@ package bgu.spl.mics.application.objects;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedList;
-import java.util.Queue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
-import org.junit.experimental.theories.Theories;
-
-import bgu.spl.mics.MessageBusImpl;
-import bgu.spl.mics.application.services.GPUService;
-import bgu.spl.mics.application.CRMSRunner;
 import bgu.spl.mics.application.messages.TestModelEvent;
-import bgu.spl.mics.application.messages.TickBroadcast;
-import bgu.spl.mics.application.messages.TrainModelEvent;
 import bgu.spl.mics.application.objects.Model.Status;
-import bgu.spl.mics.Callback;
 import bgu.spl.mics.Event;
 
 /**
@@ -43,13 +29,13 @@ public class GPU {
 
 
 	// region Added fields
+	// FIXME: Make modelsQueue into priority queue? by minimum size of model
 	private LinkedList<Event<Model>> modelEventsQueue;
 	private ArrayDeque<DataBatch> vRAM;
 	private final byte trainingDelay; // according to the type of the gpu
 	private byte vRAMCapacity;	// according to the type of the gpu
 	private int currentBatchIndex;
 	private int numberOfTrainedSamples;
-	//private int gpuTimeUsed;
 	// endregion Added fields
 
 
@@ -63,7 +49,6 @@ public class GPU {
 
 		modelEventsQueue = new LinkedList<>();
 		vRAM = new ArrayDeque<>();
-		//gpuTimeUsed = 0;
     }
 
 
@@ -118,16 +103,17 @@ public class GPU {
 	}
 	// endregion for serialization from json
 
+
 	/**
 	 * @param modelEvent event to be dealt with
 	 * @post: if modelEventQueue.size() >= @pre:modelEventQueue.size()
 	 * @return modelEventQueue.size() > @pre:modelEventQueue.size()
 	 */
 	public boolean addModel(Event<Model> modelEvent) {
-		if(modelEventsQueue.isEmpty() && modelEvent.getValue().getStatus()==Model.Status.Trained){	//if TestModelEvent execute immediately
+		if(modelEventsQueue.isEmpty() && modelEvent.getValue().getStatus()==Model.Status.Trained){	// if TestModelEvent and no events in queue - execute immediately
 			testModel((TestModelEvent) modelEvent);
 		 
-			return false;	//nothing added to queue
+			return false;	// nothing added to queue
 		}
 		else if(modelEvent.getValue().getStatus()==Model.Status.Trained){
 			modelEventsQueue.add(1, modelEvent);
@@ -137,7 +123,7 @@ public class GPU {
 			modelEventsQueue.add(modelEvent);
 		}
 		
-		return true;
+		return true; // added event to queue
 	}
 
 
@@ -153,7 +139,8 @@ public class GPU {
 			}
 
 			if (modelEventsQueue.peek().getValue().getStatus() == Status.Training) {
-				if (train() == true) { // train on this tick and see if finished training
+				// train on this tick and see if finished training
+				if (train() == true) {
 					ArrayList<Event<Model>> eventsToHandle = new ArrayList<>();
 
 					eventsToHandle.add(modelEventsQueue.poll());
@@ -171,9 +158,10 @@ public class GPU {
 
 		}
 
-		// TODO: split to smaller functions (queries + actions)
+		// FIXME: split to smaller functions (queries + actions)
 		return null;
 	}
+
 
 	/**
 	 * @inv: modelsEventsQueue.isEmpty()==false 
@@ -192,6 +180,7 @@ public class GPU {
 		// 	System.out.println("initializing training on model " + model.getName() + " of size " + model.getData().getSize());
 		// }
 	}
+
 
 	/**
 	 * @pre: currentBatchIndex <= model.getData().getSize() 
@@ -226,11 +215,9 @@ public class GPU {
 		// 	  "\n");
 		// }	
 
-
-		if( ! vRAM.isEmpty()) { // TODO:Left unsynched!!
-			//++gpuTimeUsed;
-			increaseTotalGPUTimeUsed();
-			DataBatch batch = vRAM.peek(); // TODO:Left unsynched!!
+		if( ! vRAM.isEmpty()) { // FIXME:Left unsynched!!
+			updateTotalGPUTimeUsed();
+			DataBatch batch = vRAM.peek(); // FIXME:Left unsynched!!
 
 			if ( ! batch.isInTraining()) {
 				batch.initTraining(trainingDelay);
@@ -254,6 +241,7 @@ public class GPU {
 		return false;
 	}
 
+
 	/**
 	 * @pre: modelsEventQueue.isEmpty() == false 
 	 * @pre: model.getStatus() == training
@@ -275,6 +263,7 @@ public class GPU {
 		}
 	}
 
+
 	/**
 	 * @param testModelEvent: trained model to be tested
 	 * @pre: model.status== trained
@@ -294,8 +283,8 @@ public class GPU {
 	}
 
 	
-	private void increaseTotalGPUTimeUsed() {
-		 cluster.increaseTotalGPUTimeUsed(1);;
+	private void updateTotalGPUTimeUsed() {
+		 cluster.increaseTotalGPUTimeUsed(1);
 	}
 
 

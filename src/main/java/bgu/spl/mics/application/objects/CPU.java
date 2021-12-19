@@ -16,8 +16,6 @@ public class CPU {
     private Collection<DataBatch> data;
     private Cluster cluster;
     private int ticksToCompletion;
-    //private int cpuTimeUsed;
-    //private int totalBatchesProcessed;
 
 
 	// region for serialization from json
@@ -27,8 +25,6 @@ public class CPU {
 		cluster = Cluster.getInstance();
 		cluster.registerCPU(this);
 		ticksToCompletion = 0;
-		//cpuTimeUsed = 0;
-		//totalBatchesProcessed = 0;
 	}
 	// endregion for serialization from json
 

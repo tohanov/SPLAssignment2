@@ -1,24 +1,17 @@
 package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.Event;
-import bgu.spl.mics.Message;
-import bgu.spl.mics.MessageBus;
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TestModelEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrainModelEvent;
-import bgu.spl.mics.application.objects.Cluster;
-import bgu.spl.mics.application.objects.Data;
 import bgu.spl.mics.application.objects.GPU;
 import bgu.spl.mics.application.objects.Model;
-import bgu.spl.mics.application.objects.Student;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
-import bgu.spl.mics.Broadcast;
-import bgu.spl.mics.Callback;
+
 /**
  * GPU service is responsible for handling the
  * {@link TrainModelEvent} and {@link TestModelEvent},
@@ -29,7 +22,6 @@ import bgu.spl.mics.Callback;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class GPUService extends MicroService {
-
 
 	// region for serialization from json
 	private static int gpuCounter = 0;
@@ -57,8 +49,6 @@ public class GPUService extends MicroService {
 
 			if (tickBroadcast.isLast()) {
 
-				//gpu.updateTotalGPUTimeUsed();	
-
 				// TODO: remove debug block
 				synchronized (System.out) {
 					System.out.println("[*] " + getName() + ": got LAST tick");
@@ -78,7 +68,8 @@ public class GPUService extends MicroService {
 		});
 		
 		subscribeEvent(TestModelEvent.class, testModelEvent -> {
-			if(gpu.addModel(testModelEvent)==false)		// was tested now, needs to be resolved now
+			// was tested now, needs to be resolved now
+			if (gpu.addModel(testModelEvent) == false)
 				MessageBusImpl.getInstance().complete(testModelEvent, testModelEvent.getValue());
 			
 		});
@@ -88,32 +79,4 @@ public class GPUService extends MicroService {
     public GPU getGPU() {
         return gpu;
     }
-
-
-	// Original
-    // public GPUService(String name) {
-    //     super("Change_This_Name");
-    //     // TODO Implement this
-    // }
-
-	// private Class<? extends Event<Object>> types = {
-		
-	// };
-
-	// region Added
-	// private static Cluster cluster = Cluster.getInstance();
-	// private GPU gpu;
-	// private static final HashMap<GPU.Type,int> delays = new HashMap<GPU.Type,int>() {GPU.Type.RTX3090 : 1, GPU.Type.RTX2080 : 2, GPU.Type.GTX1080 : 4};
-	// endregion Added
-
-
-	// public GPUService(String _name, GPU _gpu) {
-	// 	// TODO implement this
-    //     super(_name);
-	// 	// this.cluster = Cluster.getInstance();
-	// 	// this.gpu = _gpu;
-
-	// 	// ticksToTrainBatch = 0; // TODO: remove?
-	// 	// training = false;
-    // }
 }

@@ -53,7 +53,7 @@ public class DataBatch {
 
 
 	public boolean process() {
-		return --processingTickCount <= 0; // == 0;
+		return --processingTickCount == 0;
 	}
 
 

@@ -10,7 +10,7 @@ import com.google.gson.annotations.Expose;
  * Add all the fields described in the assignment as private fields.
  * Add fields and methods to this class as you see fit (including public methods and constructors).
  */
-public class Model { // FIXME : remove unneeded/unused methods
+public class Model {
 
 	public enum Status {
 		PreTrained, 
@@ -83,8 +83,7 @@ public class Model { // FIXME : remove unneeded/unused methods
 		return student;
 	}
 
-
-	// TODO : remove??
+	
 	@Override
 	public String toString() {
 		return getName();

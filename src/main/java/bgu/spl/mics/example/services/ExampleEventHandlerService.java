@@ -2,7 +2,6 @@ package bgu.spl.mics.example.services;
 
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.example.messages.ExampleEvent;
-import junit.framework.Test;
 
 public class ExampleEventHandlerService extends MicroService {
 

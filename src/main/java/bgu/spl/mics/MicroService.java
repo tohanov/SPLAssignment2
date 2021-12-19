@@ -167,10 +167,11 @@ public abstract class MicroService implements Runnable {
 
 
     /**
-     * The entry point of the micro-service. TODO: you must complete this code
+     * The entry point of the micro-service.
      * otherwise you will end up in an infinite loop.
      */
     @Override
+	@SuppressWarnings("unchecked")
     public final void run() {
 		messageBus.register(this);
 		
@@ -181,8 +182,7 @@ public abstract class MicroService implements Runnable {
 
         initialize();
 
-		// for notifying of finishing initialization
-		//TODO: readd for sync of first time tick with initializations of microservices
+		// for sync of first timetick with initializations of microservices
         synchronized (this) { this.notifyAll(); }
 
         while ( ! terminated) {
@@ -195,7 +195,7 @@ public abstract class MicroService implements Runnable {
 			catch (InterruptedException e) {
 				terminate();
 
-				// TODO: remove?
+				// TODO: remove debug
 				synchronized (System.out) {
 					System.out.println("[*] " + name + ": got interrupted (InterruptedException)"); 
 					e.printStackTrace();

@@ -23,7 +23,7 @@ public class Data {
 
 	public Data(Type type, int size) {
 		this.type = type;
-		this.processed = 0; // TODO: fix
+		this.processed = 0;
 		this.size = size;
 	}
 

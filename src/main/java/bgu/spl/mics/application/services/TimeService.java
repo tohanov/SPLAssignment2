@@ -1,12 +1,10 @@
 package bgu.spl.mics.application.services;
 
-import bgu.spl.mics.Broadcast;
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.CRMSRunner;
-import java.text.MessageFormat;
-import java.util.Timer;
+
 
 /**
  * TimeService is the global system timer There is only one instance of this micro-service.
@@ -25,8 +23,7 @@ public class TimeService extends MicroService {
 
 	public TimeService(int _duration, int _tickTime) {
 		super("TimeService");
-		// TODO Implement this
-		// Timer timer = new Timer();
+		
 		duration = _duration;
 		tickTime = _tickTime;
 	}
@@ -34,13 +31,10 @@ public class TimeService extends MicroService {
 	
 	@Override
 	protected void initialize() {
-		// TODO Implement this
 		TickBroadcast tick = new TickBroadcast(false);
 		MessageBusImpl messageBus = MessageBusImpl.getInstance();
 
 		try {
-			// for ( ; duration > 1; --duration) {
-			
 			for (int i = 1; i < duration; ++i) {
 				Thread.sleep(tickTime);
 				messageBus.sendBroadcast(tick);
@@ -51,7 +45,6 @@ public class TimeService extends MicroService {
 				// }
 			}
 
-			// TODO : move last tick into the loop as well
 			Thread.sleep(tickTime);
 			messageBus.sendBroadcast(new TickBroadcast(true));
 			
@@ -65,7 +58,7 @@ public class TimeService extends MicroService {
 		}
 		
 		
-		terminate(); // not entering the run() loop
+		terminate(); // not entering the run() loop since doesn't subscribe to any messages
 	}
 	
 }

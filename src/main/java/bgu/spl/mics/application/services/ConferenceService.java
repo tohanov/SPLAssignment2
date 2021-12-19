@@ -7,9 +7,9 @@ import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.PublishConferenceBroadcast;
 import bgu.spl.mics.application.messages.PublishResultsEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
-import bgu.spl.mics.application.objects.Cluster;
 import bgu.spl.mics.application.objects.ConfrenceInformation;
 import bgu.spl.mics.application.objects.Model;
+
 
 /**
  * Conference service is in charge of
@@ -24,6 +24,8 @@ public class ConferenceService extends MicroService {
     
 	// region for serialization from json
     private ConfrenceInformation conference;
+
+
 	public ConferenceService(Map<String,Object> _conference) {
         super("Conference_" + (String)_conference.get("name"));
         
@@ -31,13 +33,13 @@ public class ConferenceService extends MicroService {
     }
 	// endregion for serialization from json
 
+
     @Override
     protected void initialize() {
 
 		subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
             if(conference.increaseTime()){
                 MessageBusImpl.getInstance().sendBroadcast(new PublishConferenceBroadcast(conference.returnSuccessfulModels()));
-                // uploadConferenceInformation();
                 terminate();
             }
 
@@ -60,10 +62,6 @@ public class ConferenceService extends MicroService {
             
         });
     }
-
-    // public void uploadConferenceInformation(){
-    //     Cluster.getInstance().uploadConferenceInformation(conference);
-    // }
 
    
     public ConfrenceInformation getConference() {

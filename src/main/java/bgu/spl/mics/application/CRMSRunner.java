@@ -4,19 +4,15 @@ import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.objects.Cluster;
 import bgu.spl.mics.application.objects.DeserializedJson;
 import bgu.spl.mics.application.objects.Student;
-import bgu.spl.mics.application.services.ConferenceService;
-import bgu.spl.mics.application.services.StudentService;
 
 import java.io.File;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
 import com.google.gson.internal.LinkedTreeMap;
 
 
@@ -63,7 +59,9 @@ public class CRMSRunner {
 
 				// get notified when the new thread finished initialization
 				try { microService.wait(); }
-				catch (InterruptedException ie) { synchronizedPrintStackTrace(ie); } // TODO: remove??
+				catch (InterruptedException ie) {
+					synchronizedPrintStackTrace(ie); // TODO: remove??
+				}
 			}
 		}
 
@@ -104,7 +102,14 @@ public class CRMSRunner {
 			LinkedTreeMap<String,Object> temp = new LinkedTreeMap<>();
 			temp.put("students", system.getStudents() );
 			temp.put("conferences", system.getConferences() );
-			temp.put("statistics", Cluster.getInstance().getStatistics() );
+			temp.put("cluster statistics", Cluster.getInstance().getStatistics() );
+
+			int modelsTrainedNumber = 0;
+			for (Student student : system.getStudents()) {
+				modelsTrainedNumber += student.getTrainedModels().size();
+			}
+			temp.put("trained count", modelsTrainedNumber);
+
 			writer.write(gson.toJson(temp, LinkedTreeMap.class));
 		}
 		catch (Exception ex) {
@@ -113,7 +118,7 @@ public class CRMSRunner {
 	}
 
 
-	// TODO : remove debug function
+	// debug function
 	public static void synchronizedPrintStackTrace(Exception exception) {
 		synchronized(System.out){
 			exception.printStackTrace();
@@ -121,7 +126,7 @@ public class CRMSRunner {
 	}
 
 
-	// TODO : remove debug function
+	// debug function
 	public static void synchronizedSyso(String output){
 		synchronized(System.out){
 			System.out.println(output);

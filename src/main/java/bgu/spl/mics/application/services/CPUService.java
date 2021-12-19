@@ -3,8 +3,7 @@ package bgu.spl.mics.application.services;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.CPU;
-import bgu.spl.mics.application.objects.Cluster;
-import bgu.spl.mics.application.objects.DataBatch;
+
 
 /**
  * CPU service is responsible for handling the {@link DataPreProcessEvent}.
@@ -16,7 +15,6 @@ import bgu.spl.mics.application.objects.DataBatch;
 public class CPUService extends MicroService {
 
     private CPU cpu;
-
 
 	// region for serialization from json
 	private static int cpuCounter = 0;
@@ -33,14 +31,10 @@ public class CPUService extends MicroService {
     @Override
     protected void initialize() {
         
-        subscribeBroadcast(TickBroadcast.class, (tickBroadcast)->{
+		subscribeBroadcast(TickBroadcast.class, (tickBroadcast) -> {
             cpu.tickCallback();
 
 			if (tickBroadcast.isLast()) {
-
-				//cpu.updateTotalCPUTimeUsed();
-				//cpu.updateTotalBatchesProcessed();
-
 
 				// TODO: remove debug block
 				synchronized (System.out) {

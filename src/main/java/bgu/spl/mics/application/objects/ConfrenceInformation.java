@@ -38,16 +38,4 @@ public class ConfrenceInformation {
 	public ArrayList<Model> returnSuccessfulModels() {
 		return publications;
     }
-    
-
-	// TODO: remove??
-    @Override
-	public String toString() {
-		String output = 
-			" name of conference= " + name + 
-			", date of conference= " + date +
-			"\n the successful models are: " + publications;
-
-		return output;
-	}
 }

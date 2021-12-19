@@ -23,7 +23,6 @@ public class Student {
     @Expose private Degree status;
     @Expose private int publications;
     @Expose private int papersRead;
-    //private ArrayList<Model> models; // FIXME : should student have models or service
     @Expose private ArrayList<Model> trainedModels;
     
 
@@ -36,7 +35,6 @@ public class Student {
 		publications = 0;
 		papersRead = 0;
         trainedModels=new ArrayList<>();
-        // Cluster.getInstance().registerStudent(this); //FIXME: can student talk to cluster??
 	}
 	// endregion for serialization from json
 	
@@ -83,8 +81,4 @@ public class Student {
 	public ArrayList<Model> getTrainedModels(){
 		return trainedModels;
 	}
-
-	// public ArrayList<Model> getModels(){ // FIXME
-	// return models;
-	// }
 }

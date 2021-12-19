@@ -2,10 +2,8 @@ package bgu.spl.mics.application.objects;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonElement;
 import com.google.gson.internal.LinkedTreeMap;
 
 import bgu.spl.mics.MicroService;
@@ -22,6 +20,7 @@ public class DeserializedJson {
 	ArrayList<Student> students;
 	ArrayList<ConfrenceInformation> conferences;
 
+	
 	@SuppressWarnings("unchecked")
 	public DeserializedJson(LinkedTreeMap<String,Object> _deserializedJson) {
 		this(
@@ -64,9 +63,7 @@ public class DeserializedJson {
 
 		timeService = new TimeService(_programDuration, _tickTime);
 
-		Collections.shuffle(microServices); // FIXME : rethink
-		
-		// TODO : maybe sort students by their model sizes
+		Collections.shuffle(microServices); // FIXME : rethink. maybe sort students by their model sizes
 	}
 
 
